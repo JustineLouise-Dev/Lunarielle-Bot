@@ -23,8 +23,8 @@ WhatsApp bot berbasis [Baileys](https://github.com/WhiskeySockets/Baileys) denga
 ## 🚀 Instalasi
 
 ```bash
-git clone 
-cd 
+git clone https://github.com/Louise-dev-code/Lunarielle-Bot
+cd Lunarielle-Bot
 npm install
 ```
 
@@ -135,7 +135,7 @@ Video/GIF didukung sebagai stiker animasi, dengan durasi maksimal 10 detik. Seti
 **`.swm`** — reply sebuah stiker (statis maupun animasi) dengan `.swm <text>` untuk mengganti packname-nya. Format packname yang dihasilkan selalu `<Nama Bot> - <text>`, contoh:
 
 ```
-.swm Cinta Damai
+.swm Kanjud
 ```
 
 akan menghasilkan packname `Lunarielle Bot - Cinta Damai` (nama bot diambil dari `botName` di `config.json`). Author stiker tetap memakai `stickerAuthor` di `config.json`. Gambar/animasi stiker tidak diproses ulang — hanya metadata packname-nya yang diganti, jadi kualitas dan animasi asli tetap terjaga.
