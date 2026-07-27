@@ -1,0 +1,41 @@
+{
+  "name": "Lunarielle-Bot",
+  "version": "2.5.0",
+  "description": "WhatsApp bot — alur koneksi custom + plugin system modular dengan hot reload",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/"
+  },
+  "keywords": [
+    "whatsapp-bot-ai"
+  ],
+  "author": "Justine Louise",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/"
+  },
+  "homepage": "https://github.com/",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "7.0.0-rc13",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.6.1",
+    "pino": "^9.4.0",
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.33.5"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.1"
+  },
+  "overrides": {
+    "file-type": "16.5.4"
+  }
+}

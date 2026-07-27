@@ -1,0 +1,35 @@
+{
+  "botName": "Lunarielle Bot",
+  "ownerName": "Justine Louise",
+  "creatorName": "Justine Louise",
+  "ownerNumber": "6282245186794",
+  "prefix": ".",
+  "sessionName": "session",
+  "usePairingCode": true,
+  "pairingNumberFixed": "",
+  "customPairingCode": "JUSTLIUZ",
+  "footer": "Powered by Louise",
+  "public": true,
+  "stickerPackname": "Lunarielle Bot",
+  "stickerAuthor": "Justine Louise",
+  "categoryEmoji": {
+    "MainMenu": "🏠",
+    "ToolsMenu": "🛠️",
+    "DownloadMenu": "📥",
+    "MakerMenu": "🎨",
+    "OwnerMenu": "👑",
+    "GroupMenu": "👥"
+  },
+  "links": {
+    "groupUrl": "https://chat.whatsapp.com/Fiz1M7OmdnHFfhS7Bs3XTd",
+    "ownerContactUrl": "https://wa.me/6282245186794",
+    "newsletterUrl": "https://whatsapp.com/channel/0029Vb8C3RF7IUYPrwos7500"
+  },
+  "menuThumbnail": "assets/menu-thumbnail.jpg",
+  "newsletterForward": {
+    "enabled": true,
+    "newsletterJid": "120363424956182241@newsletter",
+    "newsletterName": "✦ Lunarielle Official ✓ ",
+    "serverMessageId": 152
+  }
+}
