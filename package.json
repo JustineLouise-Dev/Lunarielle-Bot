@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/"
+    "url": "git+https://github.com/Louise-dev-code/Lunarielle-Bot"
   },
   "keywords": [
     "whatsapp-bot-ai"
@@ -17,9 +17,9 @@
   "author": "Justine Louise",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/"
+    "url": ""
   },
-  "homepage": "https://github.com/",
+  "homepage": "https://github.com/Louise-dev-code/Lunarielle-Bot",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "7.0.0-rc13",
