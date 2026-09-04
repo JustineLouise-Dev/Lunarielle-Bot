@@ -1,145 +1,187 @@
 # Lunarielle Bot
 
-WhatsApp bot berbasis [Baileys](https://github.com/WhiskeySockets/Baileys) dengan sistem plugin modular (hot reload), menu interaktif bertombol, dan beberapa fitur moderasi grup — termasuk penghapusan otomatis pesan mention/tag-all.
+Bot WhatsApp yang ditenagai oleh [zapo-js](https://github.com/bangsulbotz/zapo-js) — dibangun dengan fokus pada kecepatan dan efisiensi.
+
+> ⚠️ **Disclaimer**: Software ini disediakan hanya untuk penggunaan personal dan edukasi. Penggunaan komersial, penjualan kembali, atau distribusi untuk keuntungan dilarang keras tanpa izin tertulis dari pembuatnya. Hormati hasil kerja developer — jangan hapus atau ubah catatan hak cipta, dan jangan klaim project ini sebagai milik sendiri.
+
+---
+
+## 📢 Info Update
+
+Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M) untuk mendapatkan informasi terbaru tentang update skrip.
+
+---
 
 ## ✨ Fitur
 
-- **Koneksi fleksibel** — login via QR code atau pairing code, auto-reconnect, auto-block panggilan masuk.
-- **Sistem plugin modular** — cukup taruh file baru di `plugins/<Kategori>/`, otomatis terdeteksi tanpa restart bot (hot reload).
-- **Menu interaktif bertombol** — `.menu` menampilkan gambar header + bottom sheet kategori ala WhatsApp native, bukan menu teks polos.
-- **Anti-Mention** — hapus otomatis pesan yang mention banyak member sekaligus (tag-all) maupun status WhatsApp yang men-tag grup, lengkap dengan pesan penjelasan ke grup setelah dihapus.
-- **Pembuat stiker** — ubah gambar maupun video/GIF pendek jadi stiker WhatsApp (termasuk stiker animasi), dengan packname & author yang otomatis tertanam di setiap stiker.
-- **Moderasi grup** — add, kick, dan delete pesan (khusus admin grup).
-- **Statistik sistem** — cek RAM, CPU, dan runtime bot langsung dari chat (khusus owner).
+- **8 kategori fitur** — Channel, Convert, Grup, Help, Interactive, Owner, Search, Tools
+- Sistem menu interaktif dengan tombol native WhatsApp (`interactiveMessage` / `nativeFlowMessage`)
+- Auto-load plugin dari folder `plugins/` (mendukung hot reload)
+- Penyimpanan sesi & data menggunakan SQLite (`@zapo-js/store-sqlite`)
+- Dukungan pairing code untuk login tanpa scan QR
+- Fitur interaktif (game, tools, converter, dsb.) yang dapat dikembangkan lewat plugin
 
-## 📋 Requirement
+---
 
-- [Node.js](https://nodejs.org) v18 ke atas
-- npm
-- Nomor WhatsApp aktif untuk dipasangkan ke bot
+## 📦 Prasyarat
 
-> Fitur stiker memakai `sharp` (konversi gambar) dan `ffmpeg-static` (konversi video/GIF ke stiker animasi). Keduanya sudah termasuk di `npm install`, tidak perlu install ffmpeg terpisah di sistem.
+- **Node.js** v20 atau lebih baru (disarankan v24+)
+- **npm** (atau Bun, jika ingin menggunakan runtime Bun)
+- Nomor WhatsApp aktif yang akan dijadikan bot
+
+---
 
 ## 🚀 Instalasi
 
-```bash
-git clone https://github.com/Louise-dev-code/Lunarielle-Bot
-cd Lunarielle-Bot
-npm install
+1. **Clone repository**
+
+   ```bash
+   git clone https://github.com/<username>/<nama-repo>.git
+   cd <nama-repo>
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+   Proses `postinstall` akan otomatis menjalankan `patch.js` untuk menambal file internal `zapo-js` (`node_modules/zapo-js/dist/**`) agar mendukung custom nodes pada pesan. Ini normal dan wajib dilakukan agar bot berjalan dengan benar.
+
+3. **Konfigurasi bot**
+
+   Edit file [`config.json`](./config.json) sesuai kebutuhan:
+
+   ```json
+   {
+     "usePairingCode": true,
+     "customPairing": "JVSTL1VZ",
+     "noprefix": true,
+     "self": false,
+
+     "ownerName": "NamaOwner",
+     "owner": "62812xxxxxxx",
+     "botName": "NamaBot",
+     "botNumber": "62812xxxxxxx",
+
+     "jidGroup": "1234@g.us",
+     "channelUrl": "https://whatsapp.com/channel/xxxxxxxxxxxx",
+
+     "prefixes": [".", "#", "!", "/"]
+   }
+   ```
+
+   | Key              | Keterangan                                                                 |
+   |------------------|------------------------------------------------------------------------------|
+   | `usePairingCode` | `true` untuk login via kode pairing, `false` untuk scan QR                   |
+   | `customPairing`  | Kode pairing custom (8 karakter, opsional)                                   |
+   | `noprefix`       | `true` jika bot merespons tanpa prefix perintah                              |
+   | `owner`          | Nomor WhatsApp owner (format internasional tanpa `+`)                        |
+   | `botName`        | Nama bot yang ditampilkan pada menu                                          |
+   | `channelUrl`     | Link channel WhatsApp resmi (dipakai pada tombol menu)                       |
+   | `prefixes`       | Daftar prefix perintah yang dikenali bot                                     |
+
+4. **Jalankan bot**
+
+   ```bash
+   npm start
+   ```
+
+   Saat pertama kali dijalankan:
+   - Jika `usePairingCode: true`, bot akan menampilkan **kode pairing** di terminal — masukkan kode tersebut lewat *Linked Devices* di aplikasi WhatsApp.
+   - Jika `usePairingCode: false`, bot akan menampilkan **QR code** untuk dipindai.
+
+   Sesi login akan tersimpan otomatis di folder `session/` (SQLite) sehingga tidak perlu login ulang setiap restart.
+
+---
+
+## 📁 Struktur Folder
+
+```
+├── config.json          # Konfigurasi utama bot
+├── settings.js          # Loader & helper konfigurasi
+├── index.js             # Entry point aplikasi
+├── handler.js           # Command dispatcher
+├── patch.js             # Patch otomatis untuk zapo-js (dijalankan saat postinstall)
+├── db/                  # Layer database (SQLite): contacts, thumbnails, dsb.
+├── lib/                 # Helper & utilitas internal (loader plugin, wrapper, dsb.)
+├── src/                 # Koneksi socket, handler pesan & event grup
+├── patches/             # File patch tambahan untuk dependency pihak ketiga
+└── plugins/
+    ├── channel/          # Fitur channel WhatsApp
+    ├── convert/          # Fitur konversi media/format
+    ├── grup/             # Fitur pengelolaan grup
+    ├── help/             # Menu bantuan (menu, viewlist, help, dsb.)
+    ├── interactive/      # Game & widget interaktif
+    ├── owner/            # Fitur khusus owner bot
+    ├── search/           # Fitur pencarian
+    └── tools/            # Perkakas/utilitas lain
 ```
 
-### Konfigurasi
+### Menambahkan plugin baru
 
-Salin/edit `config.json` dan sesuaikan minimal bagian berikut sebelum menjalankan bot:
-
-```json
-{
-  "botName": "Nama Bot Kamu",
-  "ownerName": "Nama Kamu",
-  "ownerNumber": "62xxxxxxxxxxx",
-  "prefix": ".",
-  "usePairingCode": true,
-  "stickerPackname": "Nama Pack Stiker Kamu",
-  "stickerAuthor": "Nama Kamu"
-}
-```
-
-> ⚠️ **Jangan commit `config.json` dengan nomor WhatsApp, link grup, atau JID channel asli ke repository publik.** Ganti dulu nilai-nilai tersebut dengan placeholder, atau pindahkan data sensitif ke `.env` / gunakan `.gitignore` sebelum push.
-
-### Menjalankan bot
-
-```bash
-npm start
-```
-
-Saat pertama kali dijalankan, kamu akan diminta memilih metode login:
-
-- **`qr`** — pindai QR code yang muncul di terminal lewat WhatsApp di HP.
-- **`pairing`** — masukkan nomor WhatsApp, lalu masukkan kode pairing yang diberikan WhatsApp ke perangkat bot.
-
-Sesi login tersimpan di folder `session/` supaya tidak perlu login ulang setiap kali bot direstart.
-
-## 📁 Struktur folder
-
-```
-index.js                 # Entry point: koneksi, pairing/QR, dispatch ke plugin
-systemConnext.js         # Handler connection.update (reconnect, render QR)
-config.js                # Loader config.json + helper tambahan
-config.json               # Pengaturan utama bot
-module/handler.js         # Plugin loader + hot reload
-lib/
-  utils.js                # Helper umum (extractText, getSender, dll)
-  buttons.js               # Helper membangun & mengirim pesan bertombol
-  menuCategory.js           # Logic .menu (daftar kategori & submenu)
-  relayInjection.js          # Suntik tombol Menu/Owner ke semua balasan bot
-  groupSettings.js            # Penyimpanan pengaturan per-grup (mis. Anti-Mention)
-  antiMention.js                # Deteksi & hapus otomatis pesan mention/tag-all
-  sticker.js                      # Konversi media ke stiker webp + metadata packname/author
-plugins/
-  MainMenu/                # .menu, .owner
-  GroupMenu/                # .add, .kick, .delete, .antimention
-  MakerMenu/                 # .sticker
-  OwnerMenu/                   # .stats
-data/                     # Data persisten (pengaturan grup, dll) — dibuat otomatis
-assets/                   # Aset media (thumbnail menu, dll)
-```
-
-## 🔌 Menambah command baru
-
-Buat file baru di `plugins/<KategoriBaru>/nama-perintah.js`:
+Buat file `.js` di dalam folder kategori yang sesuai (mis. `plugins/tools/contoh.js`) dengan struktur:
 
 ```js
 export default {
-  name: 'Nama Fitur',
-  command: ['contoh'],        // trigger: .contoh
-  tags: ['KategoriBaru'],      // opsional, default ambil dari nama folder
-  description: 'Deskripsi singkat',
-  owner: false,                 // true = hanya owner yang bisa pakai
-  group: false,                  // true = hanya bisa dipakai di grup
+  command: 'contoh',
+  alias: ['cth'],
+  category: 'tools',
+  description: 'Deskripsi singkat fitur ini.',
+  typing: true,
 
-  async execute({ sock, msg, args, text, sender, isOwner, config }) {
-    await sock.sendMessage(msg.key.remoteJid, { text: 'Halo!' }, { quoted: msg });
-  },
-};
+  async execute(m, { sock, plugins, args }) {
+    return m.reply('Halo dari plugin baru!')
+  }
+}
 ```
 
-File otomatis terdeteksi dan dimuat tanpa perlu restart bot. Tambahkan emoji kategori baru di `config.json` → `categoryEmoji` supaya tampil rapi di `.menu` (kalau tidak diisi, dipakai emoji 📂 default).
+Plugin akan otomatis terdeteksi oleh `lib/loadPlugins.js` tanpa perlu didaftarkan manual, dan langsung muncul pada `.menu <kategori>` sesuai nilai `category` yang didefinisikan.
 
-## 🛡️ Perintah Anti-Mention
+---
 
-| Perintah | Keterangan |
-|---|---|
-| `.antimention` | Menampilkan status Anti-Mention saat ini di grup |
-| `.antimention on` | Mengaktifkan penghapusan otomatis pesan mention/tag-all (bot harus admin) |
-| `.antimention off` | Menonaktifkan fitur ini |
+## 🖥️ Deploy ke VPS / Server
 
-Saat aktif, bot otomatis menghapus:
-- Pesan yang mention banyak member grup sekaligus (tag-all)
-- Status WhatsApp yang men-tag grup tersebut
+1. Pastikan Node.js dan `git` sudah terpasang di server.
+2. Clone repository dan install dependency seperti langkah di atas.
+3. Jalankan bot di background menggunakan process manager, misalnya [PM2](https://pm2.keymetrics.io/):
 
-Setelah pesan dihapus, bot mengirim pesan penjelasan singkat ke grup agar member tahu alasannya.
+   ```bash
+   npm install -g pm2
+   pm2 start index.js --name lunarielle-bot
+   pm2 save
+   pm2 startup
+   ```
 
-## 🎨 Perintah Sticker
+4. Cek log kapan saja dengan:
 
-| Perintah | Keterangan |
-|---|---|
-| `.sticker` / `.s` / `.stiker` | Membuat stiker dari gambar atau video/GIF yang dikirim/di-reply |
-| `.swm <text>` | Mengganti packname stiker yang di-reply |
+   ```bash
+   pm2 logs lunarielle-bot
+   ```
 
-**`.sticker`** — cara pakai:
-1. Kirim gambar atau video/GIF pendek dengan caption `.sticker`, **atau**
-2. Reply gambar/video/GIF yang sudah ada di chat dengan perintah `.sticker`.
+---
 
-Video/GIF didukung sebagai stiker animasi, dengan durasi maksimal 10 detik. Setiap stiker yang dibuat otomatis membawa metadata **packname** dan **author** sesuai `stickerPackname` dan `stickerAuthor` di `config.json`.
+## 🔒 Catatan Keamanan
 
-**`.swm`** — reply sebuah stiker (statis maupun animasi) dengan `.swm <text>` untuk mengganti packname-nya. Format packname yang dihasilkan selalu `<Nama Bot> - <text>`, contoh:
+- **Jangan commit folder `session/`** ke repository — folder ini berisi kredensial sesi WhatsApp yang bersifat rahasia.
+- Jangan bagikan `customPairing` atau isi `config.json` yang memuat nomor pribadi ke publik.
+- Disarankan menambahkan `.gitignore` berikut sebelum push ke GitHub:
 
-```
-.swm Kanjud
-```
+  ```gitignore
+  node_modules/
+  session/
+  store/
+  *.db
+  *.db-shm
+  *.db-wal
+  .env
+  ```
 
-akan menghasilkan packname `Lunarielle Bot - Cinta Damai` (nama bot diambil dari `botName` di `config.json`). Author stiker tetap memakai `stickerAuthor` di `config.json`. Gambar/animasi stiker tidak diproses ulang — hanya metadata packname-nya yang diganti, jadi kualitas dan animasi asli tetap terjaga.
+---
 
-## 📄 Lisensi
+## 📜 Lisensi
 
-[MIT](LICENSE)
+© 2026 Justine Louise. All Rights Reserved.
+® Powered by [Zapo-js](https://github.com/bangsulbotz/zapo-js)
+
+Software ini disediakan untuk penggunaan personal dan edukasi. Dilarang menjual, mendistribusikan ulang untuk keuntungan, atau mengklaim project ini sebagai karya sendiri tanpa izin tertulis dari penulis.

@@ -1,41 +1,26 @@
 {
-  "name": "Lunarielle-Bot",
-  "version": "2.5.0",
-  "description": "WhatsApp bot — alur koneksi custom + plugin system modular dengan hot reload",
-  "main": "index.js",
+  "name": "Lunarielle-bot",
+  "version": "1.3.0",
   "type": "module",
+  "description": "Bot wa di tenagai oleh zapo-js",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "node patch.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Louise-dev-code/Lunarielle-Bot"
-  },
-  "keywords": [
-    "whatsapp-bot-ai"
-  ],
-  "author": "Justine Louise",
-  "license": "MIT",
-  "bugs": {
-    "url": ""
-  },
-  "homepage": "https://github.com/Louise-dev-code/Lunarielle-Bot",
   "dependencies": {
-    "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "7.0.0-rc13",
-    "chalk": "^5.3.0",
-    "dotenv": "^16.6.1",
-    "pino": "^9.4.0",
-    "qrcode-terminal": "^0.12.0",
-    "sharp": "^0.33.5"
+    "@zapo-js/media-utils": "latest",
+    "@zapo-js/store-sqlite": "latest",
+    "axios": "latest",
+    "better-sqlite3": "^13.0.3",
+    "chalk": "latest",
+    "file-type": "latest",
+    "fluent-ffmpeg": "latest",
+    "jimp": "^1.6.1",
+    "qrcode-terminal": "latest",
+    "zapo-js": "latest"
   },
-  "optionalDependencies": {
-    "ffmpeg-static": "^5.2.0"
-  },
-  "devDependencies": {
-    "prettier": "^3.6.1"
-  },
-  "overrides": {
-    "file-type": "16.5.4"
-  }
+  "trustedDependencies": [
+    "zapo-js"
+  ]
 }

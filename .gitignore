@@ -1,6 +1,10 @@
 node_modules/
 session/
-data/
+store/
+*.db
+*.db-shm
+*.db-wal
 .env
-*.log
-.DS_Store
+bun.lock
+bunfig.toml
+package-lock.json
