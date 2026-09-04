@@ -1,6 +1,6 @@
 # Lunarielle Bot
 
-Bot WhatsApp yang ditenagai oleh [zapo-js](https://github.com/bangsulbotz/zapo-js) — dibangun dengan fokus pada kecepatan dan efisiensi.
+Bot WhatsApp yang ditenagai oleh [zapo-js](https://github.com/bangsulbotz/zapo-js) — dibangun dengan fokus pada kecepatan dan efisiensi, ini adalah project fork dari zapo-js.
 
 > ⚠️ **Disclaimer**: Software ini disediakan hanya untuk penggunaan personal dan edukasi. Penggunaan komersial, penjualan kembali, atau distribusi untuk keuntungan dilarang keras tanpa izin tertulis dari pembuatnya. Hormati hasil kerja developer — jangan hapus atau ubah catatan hak cipta, dan jangan klaim project ini sebagai milik sendiri.
 
@@ -37,7 +37,7 @@ Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwke
 
    ```bash
    git clone https://github.com/JustineLouise-Dev/Lunarielle-Bot
-   cd <nama-repo>
+   cd Lunarielle-Bot
    ```
 
 2. **Install dependencies**
