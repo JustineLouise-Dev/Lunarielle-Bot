@@ -8,7 +8,7 @@ Bot WhatsApp yang ditenagai oleh [zapo-js](https://github.com/bangsulbotz/zapo-j
 
 ## 📢 Info Update
 
-Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M) untuk mendapatkan informasi terbaru tentang update skrip.
+Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M) untuk mendapatkan informasi terbaru tentang update skrip dan fitur-fitur yang tersedia. Jika ingin mendapatkan fitur terbaru, silakan bergabung ke saluran tersebut.
 
 ---
 
@@ -36,7 +36,7 @@ Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwke
 1. **Clone repository**
 
    ```bash
-   git clone https://github.com/<username>/<nama-repo>.git
+   git clone https://github.com/JustineLouise-Dev/Lunarielle-Bot
    cd <nama-repo>
    ```
 
