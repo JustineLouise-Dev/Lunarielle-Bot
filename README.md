@@ -78,7 +78,7 @@ Saat pertama kali jalan, scan QR yang muncul di terminal.
 Konfigurasi utama ada di:
 
 ```text
-settings.js
+config.json
 ```
 
 Sesuaikan prefix, nomor owner, dan pengaturan bot lainnya. Jangan upload file yang berisi credential, session, database, atau konfigurasi pribadi.
