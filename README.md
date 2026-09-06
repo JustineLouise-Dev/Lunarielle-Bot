@@ -1,4 +1,4 @@
-# Zapo Bot
+# Lunarielle Bot
 
 <p align="center">
   <picture>
@@ -8,11 +8,11 @@
   </picture>
 </p>
 
-<p align="center"><b>Base bot WhatsApp yang ringan, fleksibel, dan siap dikembangkan.</b></p>
+<p align="center"><b>Base bot WhatsApp fork dari zapo-js yang ringan, fleksibel, dan siap dikembangkan.</b></p>
 
 Bot WhatsApp berbasis [Zapo-JS](https://github.com/vinikjkkj/zapo). Project ini dibuat sebagai base bot yang simpel, gampang dikembangkan, dan tetap punya akses ke fitur low-level WhatsApp kalau memang dibutuhkan.
 
-> Ini adalah bot base, bukan pengganti Zapo-JS.
+> Ini adalah bot base hasil fork bernama lunarielle Bot, bukan pengganti Zapo-JS.
 
 <p align="center">
   <a href="https://zapo.to">Dokumentasi Zapo</a> |
