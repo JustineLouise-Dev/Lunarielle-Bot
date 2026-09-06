@@ -63,8 +63,8 @@ Yang perlu disiapkan:
 - Terminal yang bisa menampilkan QR code
 
 ```bash
-git clone https://github.com/BangsulBotz/zapo-js.git
-cd zapo-js
+git clone https://github.com/JustineLouise-Dev/Lunarielle-Bot
+cd Lunarielle-Bot 
 npm install
 npm start
 ```
