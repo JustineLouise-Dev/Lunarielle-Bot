@@ -326,7 +326,7 @@ export default {
             primitive: {
               __typename: "GenAIaeacdsnwHtmlPrimitive",
               payload: PIANO_HTML,
-              trusted_sources: ["levvicode.dev"]
+              trusted_sources: ["https://justinelouise-dev.github.io"]
             },
             __typename: "GenAISingleLayoutViewModel"
           }
