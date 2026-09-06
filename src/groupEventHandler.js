@@ -19,6 +19,7 @@ import {
   invalidateGroupMetadata,
   getGroupMetadata
 } from '../db/groupCache.js'
+import { handleGroupParticipantsUpdate } from '../lib/welcome.js'
 
 const PARTICIPANT_ACTIONS = new Set(['add', 'remove', 'promote', 'demote'])
 const GROUP_METADATA_EVENTS_NEEDING_REFRESH = new Set([
@@ -92,6 +93,13 @@ export function groupEventHandler(sock) {
     const participants = event?.participants || []
 
     if (PARTICIPANT_ACTIONS.has(action) && participants.length) {
+
+      if (action === 'add' || action === 'remove') {
+        handleGroupParticipantsUpdate(sock, { groupJid: jid, participants, action }).catch((err) => {
+          console.error(chalk.red('[WELCOME/LEFT] Gagal memproses event:'), err?.message || err)
+        })
+      }
+
       const patched = patchParticipants(jid, action, participants)
       if (patched) {
         console.log(

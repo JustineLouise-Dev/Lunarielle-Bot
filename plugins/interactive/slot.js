@@ -11,7 +11,6 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/bot/slot.js
-// 🎰 Fruit Bonanza — Slot Machine dengan suara & efek visual
 
 const SLOT_HTML = `<style>
 
@@ -344,7 +343,7 @@ export default {
             primitive: {
               __typename: "GenAIaeacdsnwHtmlPrimitive",
               payload: SLOT_HTML,
-              trusted_sources: ["justinelouise-dev.github.io"]
+              trusted_sources: ["levvicode.dev"]
             },
             __typename: "GenAISingleLayoutViewModel"
           }

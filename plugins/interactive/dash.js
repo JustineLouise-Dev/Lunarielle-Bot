@@ -11,7 +11,6 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/bot/dash.js
-// 🌀 Speedy Dash v4 — Platformer with laser & boss fight!
 
 const DASH_HTML = `<style>
 
@@ -1774,7 +1773,7 @@ export default {
             primitive: {
               __typename: "GenAIaeacdsnwHtmlPrimitive",
               payload: DASH_HTML,
-              trusted_sources: ["justinelouise-dev.github.io"]
+              trusted_sources: ["levvicode.dev"]
             },
             __typename: "GenAISingleLayoutViewModel"
           }

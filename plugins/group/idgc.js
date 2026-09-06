@@ -10,13 +10,13 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/grup/idgc.js
+// plugins/group/idgc.js
 import { buildQuoteContext } from '../../lib/utils.js'
 
 export default {
   command: 'idgc',
   alias: ['idgrup', 'idgroup', 'grupid', 'groupid'],
-  category: 'grup',
+  category: 'group',
   description: `Tampilkan *ID Grup* dalam bentuk tombol copy.
 
 \`Cara Penggunaan:\`

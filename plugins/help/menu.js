@@ -19,7 +19,7 @@ const zapoVersion = zapoPkg.version
 export const CATEGORY_ICON = {
     channel: '📢',
     convert: '🔄',
-    grup: '👥',
+    group: '👥',
     help: '🆘',
     interactive: '🎮',
     owner: '👑',

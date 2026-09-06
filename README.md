@@ -1,187 +1,276 @@
-# Lunarielle Bot
+# Zapo Bot
 
-Bot WhatsApp yang ditenagai oleh [zapo-js](https://github.com/bangsulbotz/zapo-js) — dibangun dengan fokus pada kecepatan dan efisiensi, ini adalah project fork dari zapo-js.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vinikjkkj/zapo/master/.github/assets/logo.png" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/vinikjkkj/zapo/master/.github/assets/logo-light.png" />
+    <img src="https://raw.githubusercontent.com/vinikjkkj/zapo/master/.github/assets/logo-light.png" alt="Zapo Bot" width="400" />
+  </picture>
+</p>
 
-> ⚠️ **Disclaimer**: Software ini disediakan hanya untuk penggunaan personal dan edukasi. Penggunaan komersial, penjualan kembali, atau distribusi untuk keuntungan dilarang keras tanpa izin tertulis dari pembuatnya. Hormati hasil kerja developer — jangan hapus atau ubah catatan hak cipta, dan jangan klaim project ini sebagai milik sendiri.
+<p align="center"><b>Base bot WhatsApp yang ringan, fleksibel, dan siap dikembangkan.</b></p>
 
----
+Bot WhatsApp berbasis [Zapo-JS](https://github.com/vinikjkkj/zapo). Project ini dibuat sebagai base bot yang simpel, gampang dikembangkan, dan tetap punya akses ke fitur low-level WhatsApp kalau memang dibutuhkan.
 
-## 📢 Info Update
+> Ini adalah bot base, bukan pengganti Zapo-JS.
 
-Bergabunglah ke [saluran WhatsApp resmi](https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M) untuk mendapatkan informasi terbaru tentang update skrip dan fitur-fitur yang tersedia. Jika ingin mendapatkan fitur terbaru, silakan bergabung ke saluran tersebut.
+<p align="center">
+  <a href="https://zapo.to">Dokumentasi Zapo</a> |
+  <a href="https://www.npmjs.com/package/zapo-js">NPM</a> |
+  <a href="https://whatsapp.com/channel/0029VbACHzn4inokBZqMsq2W">Channel WhatsApp</a> |
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
----
+## Fitur
 
-## ✨ Fitur
+- Plugin system dengan command dan alias
+- Reload plugin tanpa restart penuh
+- Penyimpanan session memakai SQLite
+- Handler pesan, koneksi, grup, dan contact
+- Dukungan media, thumbnail, voice note, dan reaction
+- Raw message database untuk kebutuhan plugin
+- Dukungan custom nodes melalui `patch.js`
+- Isolasi error antar-plugin
 
-- **8 kategori fitur** — Channel, Convert, Grup, Help, Interactive, Owner, Search, Tools
-- Sistem menu interaktif dengan tombol native WhatsApp (`interactiveMessage` / `nativeFlowMessage`)
-- Auto-load plugin dari folder `plugins/` (mendukung hot reload)
-- Penyimpanan sesi & data menggunakan SQLite (`@zapo-js/store-sqlite`)
-- Dukungan pairing code untuk login tanpa scan QR
-- Fitur interaktif (game, tools, converter, dsb.) yang dapat dikembangkan lewat plugin
+## Kelebihan
 
----
+- **Ringan:** hanya memproses hal yang memang diperlukan.
+- **Fast response:** handler dan plugin dibuat supaya alur pesan tetap singkat.
+- **Tahan banting:** error pada satu plugin tidak langsung menjatuhkan seluruh bot.
+- **Tidak overlimit:** helper, cache, dan database dipakai seperlunya agar tidak melakukan kerja berulang.
+- **Fleksibel:** bisa memakai API Zapo-JS biasa maupun custom nodes saat dibutuhkan.
+- **Mudah di-maintenance:** koneksi, handler, database, helper, dan plugin dipisahkan dengan jelas.
+- **Siap dikembangkan:** struktur folder dibuat agar fitur baru tidak perlu mengacak-acak core bot.
 
-## 📦 Prasyarat
+## Visi
 
-- **Node.js** v20 atau lebih baru (disarankan v24+)
-- **npm** (atau Bun, jika ingin menggunakan runtime Bun)
-- Nomor WhatsApp aktif yang akan dijadikan bot
+Project ini dibuat dengan beberapa tujuan utama:
 
----
+- Mengejar efisiensi tanpa mengorbankan fleksibilitas.
+- Menjaga bot tetap cepat, ringan, dan stabil dalam pemakaian panjang.
+- Membuat struktur yang mudah dipahami, dirawat, dan dikembangkan.
+- Mengurangi proses berulang yang tidak perlu pada jalur pesan.
+- Memberi ruang untuk fitur sederhana sampai kebutuhan low-level WhatsApp.
+- Membuat base bot yang bisa terus disegarkan tanpa harus membongkar semuanya dari awal.
 
-## 🚀 Instalasi
+## Instalasi
 
-1. **Clone repository**
+Yang perlu disiapkan:
 
-   ```bash
-   git clone https://github.com/JustineLouise-Dev/Lunarielle-Bot
-   cd Lunarielle-Bot
-   ```
+- Node.js 20 atau lebih baru
+- npm
+- FFmpeg dan FFprobe untuk fitur media
+- Terminal yang bisa menampilkan QR code
 
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-   Proses `postinstall` akan otomatis menjalankan `patch.js` untuk menambal file internal `zapo-js` (`node_modules/zapo-js/dist/**`) agar mendukung custom nodes pada pesan. Ini normal dan wajib dilakukan agar bot berjalan dengan benar.
-
-3. **Konfigurasi bot**
-
-   Edit file [`config.json`](./config.json) sesuai kebutuhan:
-
-   ```json
-   {
-     "usePairingCode": true,
-     "customPairing": "JVSTL1VZ",
-     "noprefix": true,
-     "self": false,
-
-     "ownerName": "NamaOwner",
-     "owner": "62812xxxxxxx",
-     "botName": "NamaBot",
-     "botNumber": "62812xxxxxxx",
-
-     "jidGroup": "1234@g.us",
-     "channelUrl": "https://whatsapp.com/channel/xxxxxxxxxxxx",
-
-     "prefixes": [".", "#", "!", "/"]
-   }
-   ```
-
-   | Key              | Keterangan                                                                 |
-   |------------------|------------------------------------------------------------------------------|
-   | `usePairingCode` | `true` untuk login via kode pairing, `false` untuk scan QR                   |
-   | `customPairing`  | Kode pairing custom (8 karakter, opsional)                                   |
-   | `noprefix`       | `true` jika bot merespons tanpa prefix perintah                              |
-   | `owner`          | Nomor WhatsApp owner (format internasional tanpa `+`)                        |
-   | `botName`        | Nama bot yang ditampilkan pada menu                                          |
-   | `channelUrl`     | Link channel WhatsApp resmi (dipakai pada tombol menu)                       |
-   | `prefixes`       | Daftar prefix perintah yang dikenali bot                                     |
-
-4. **Jalankan bot**
-
-   ```bash
-   npm start
-   ```
-
-   Saat pertama kali dijalankan:
-   - Jika `usePairingCode: true`, bot akan menampilkan **kode pairing** di terminal — masukkan kode tersebut lewat *Linked Devices* di aplikasi WhatsApp.
-   - Jika `usePairingCode: false`, bot akan menampilkan **QR code** untuk dipindai.
-
-   Sesi login akan tersimpan otomatis di folder `session/` (SQLite) sehingga tidak perlu login ulang setiap restart.
-
----
-
-## 📁 Struktur Folder
-
+```bash
+git clone https://github.com/BangsulBotz/zapo-js.git
+cd zapo-js
+npm install
+npm start
 ```
-├── config.json          # Konfigurasi utama bot
-├── settings.js          # Loader & helper konfigurasi
-├── index.js             # Entry point aplikasi
-├── handler.js           # Command dispatcher
-├── patch.js             # Patch otomatis untuk zapo-js (dijalankan saat postinstall)
-├── db/                  # Layer database (SQLite): contacts, thumbnails, dsb.
-├── lib/                 # Helper & utilitas internal (loader plugin, wrapper, dsb.)
-├── src/                 # Koneksi socket, handler pesan & event grup
-├── patches/             # File patch tambahan untuk dependency pihak ketiga
+
+`npm install` otomatis menjalankan `node patch.js` melalui script `postinstall`.
+
+Saat pertama kali jalan, scan QR yang muncul di terminal.
+
+## Konfigurasi
+
+Konfigurasi utama ada di:
+
+```text
+settings.js
+```
+
+Sesuaikan prefix, nomor owner, dan pengaturan bot lainnya. Jangan upload file yang berisi credential, session, database, atau konfigurasi pribadi.
+
+## Struktur Project
+
+```text
+.
+├── index.js
+├── settings.js
+├── patch.js
+├── package.json
+├── src/
+│   ├── createSocket.js
+│   ├── connectionHandler.js
+│   ├── messageHandler.js
+│   └── groupEventHandler.js
+├── lib/
+├── db/
+├── session/
 └── plugins/
-    ├── channel/          # Fitur channel WhatsApp
-    ├── convert/          # Fitur konversi media/format
-    ├── grup/             # Fitur pengelolaan grup
-    ├── help/             # Menu bantuan (menu, viewlist, help, dsb.)
-    ├── interactive/      # Game & widget interaktif
-    ├── owner/            # Fitur khusus owner bot
-    ├── search/           # Fitur pencarian
-    └── tools/            # Perkakas/utilitas lain
+    ├── bot/
+    ├── chanel/
+    ├── grup/
+    ├── konvert/
+    ├── owner/
+    └── tools/
 ```
 
-### Menambahkan plugin baru
+Folder `session/`, database lokal, dan credential sebaiknya tidak masuk Git.
 
-Buat file `.js` di dalam folder kategori yang sesuai (mis. `plugins/tools/contoh.js`) dengan struktur:
+## Membuat Plugin
+
+Buat file JavaScript di dalam `plugins/<kategori>/`.
 
 ```js
 export default {
-  command: 'contoh',
-  alias: ['cth'],
-  category: 'tools',
-  description: 'Deskripsi singkat fitur ini.',
-  typing: true,
+  command: 'halo',
+  alias: ['hi'],
+  category: 'bot',
+  description: 'Menyapa user',
 
-  async execute(m, { sock, plugins, args }) {
-    return m.reply('Halo dari plugin baru!')
+  async execute(m) {
+    await m.reply(`Halo ${m.pushName || 'kak'}!`)
   }
 }
 ```
 
-Plugin akan otomatis terdeteksi oleh `lib/loadPlugins.js` tanpa perlu didaftarkan manual, dan langsung muncul pada `.menu <kategori>` sesuai nilai `category` yang didefinisikan.
+Plugin minimal harus punya:
 
----
+- `command`
+- `execute(m, context)`
 
-## 🖥️ Deploy ke VPS / Server
+Context yang umum dipakai:
 
-1. Pastikan Node.js dan `git` sudah terpasang di server.
-2. Clone repository dan install dependency seperti langkah di atas.
-3. Jalankan bot di background menggunakan process manager, misalnya [PM2](https://pm2.keymetrics.io/):
+```js
+const { sock, args, plugins } = context
+```
 
-   ```bash
-   npm install -g pm2
-   pm2 start index.js --name lunarielle-bot
-   pm2 save
-   pm2 startup
-   ```
+Object pesan `m` juga menyediakan beberapa properti seperti `m.chat`, `m.sender`, `m.text`, `m.quoted`, `m.isGroup`, `m.type`, dan `m.reply()`.
 
-4. Cek log kapan saja dengan:
+<details>
+<summary>Contoh reply media</summary>
 
-   ```bash
-   pm2 logs lunarielle-bot
-   ```
+```js
+await m.reply({
+  type: 'image',
+  media: buffer,
+  mimetype: 'image/jpeg',
+  caption: 'Ini gambar'
+})
+```
 
----
+</details>
 
-## 🔒 Catatan Keamanan
+## API Dasar
 
-- **Jangan commit folder `session/`** ke repository — folder ini berisi kredensial sesi WhatsApp yang bersifat rahasia.
-- Jangan bagikan `customPairing` atau isi `config.json` yang memuat nomor pribadi ke publik.
-- Disarankan menambahkan `.gitignore` berikut sebelum push ke GitHub:
+Kirim pesan biasa:
 
-  ```gitignore
-  node_modules/
-  session/
-  store/
-  *.db
-  *.db-shm
-  *.db-wal
-  .env
-  ```
+```js
+await sock.message.send(m.chat, 'Halo dunia')
+```
 
----
+Reply pesan:
 
-## 📜 Lisensi
+```js
+await m.reply('Pong')
+```
 
-© 2026 Justine Louise. All Rights Reserved.
-® Powered by [Zapo-js](https://github.com/bangsulbotz/zapo-js)
+Reaction:
 
-Software ini disediakan untuk penggunaan personal dan edukasi. Dilarang menjual, mendistribusikan ulang untuk keuntungan, atau mengklaim project ini sebagai karya sendiri tanpa izin tertulis dari penulis.
+```js
+await sock.sendReact(m.chat, '👍', m.id)
+```
+
+Untuk struktur pesan Zapo-JS yang lebih lengkap, gunakan [dokumentasi resminya](https://zapo.to).
+
+<details>
+<summary>Voice note</summary>
+
+```js
+await sock.sendVoiceNote(m.chat, './audio.mp3')
+```
+
+Input yang didukung mengikuti wrapper project, seperti `Buffer`, stream, URL, path file, dan Promise.
+
+</details>
+
+<details>
+<summary>Thumbnail dan link preview</summary>
+
+```js
+const thumb = await sock.uploadThumbnail('./cover.jpg')
+
+await sock.message.send(m.chat, {
+  extendedTextMessage: {
+    text: 'https://example.com',
+    matchedText: 'https://example.com',
+    title: 'Example',
+    description: 'Contoh link preview',
+    ...thumb
+  }
+})
+```
+
+</details>
+
+## Custom Nodes
+
+`patch.js` dijalankan otomatis setelah `npm install`. Patch ini memungkinkan penggunaan `customNodes` pada pengiriman pesan tertentu.
+
+```js
+await sock.message.send(m.chat, message, {
+  customNodes: [
+    {
+      tag: 'contoh',
+      attrs: {},
+      content: []
+    }
+  ]
+})
+```
+
+Custom nodes bergantung pada struktur internal WhatsApp dan versi Zapo-JS. Pakai hanya saat API biasa belum cukup.
+
+## Troubleshooting
+
+<details>
+<summary>Plugin tidak terbaca</summary>
+
+- Pastikan file berada di dalam `plugins/`
+- Pastikan memakai `export default`
+- Pastikan ada `command` dan `execute`
+- Pastikan ekstensi file `.js`
+- Cek syntax JavaScript
+
+</details>
+
+<details>
+<summary>Session selalu minta scan QR</summary>
+
+Pastikan folder `session/` tidak dihapus dan proses punya izin baca/tulis ke folder tersebut.
+
+</details>
+
+<details>
+<summary>FFmpeg tidak ditemukan</summary>
+
+```bash
+ffmpeg -version
+ffprobe -version
+```
+
+Pastikan keduanya sudah terinstall dan tersedia di `PATH`.
+
+</details>
+
+## Riwayat Perubahan
+
+Detail update project tersedia di [CHANGELOG.md](CHANGELOG.md).
+
+## Disclaimer
+
+Zapo-JS adalah implementasi independen untuk kebutuhan engineering dan interoperability research. Project ini tidak berafiliasi dengan atau didukung oleh WhatsApp.
+
+Gunakan bot secara bertanggung jawab dan sesuai aturan layanan yang berlaku.
+
+## Kredit
+
+- [Zapo-JS](https://zapo.to)
+- [@zapo-js/media-utils](https://www.npmjs.com/package/@zapo-js/media-utils)
+- [@zapo-js/store-sqlite](https://www.npmjs.com/package/@zapo-js/store-sqlite)
+- `better-sqlite3`
+- `jimp`
+- FFmpeg dan FFprobe

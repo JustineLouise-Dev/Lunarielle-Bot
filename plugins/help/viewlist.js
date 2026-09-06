@@ -11,12 +11,6 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/help/viewlist.js
-//
-// Command mandiri `.viewlist` — tetap tersedia untuk yang mengetik manual.
-// Menampilkan tombol "View List" tunggal (native flow single_select) yang
-// saat ditekan membuka sheet berisi seluruh kategori fitur bot. Sheet yang
-// sama juga sudah tertanam langsung pada tombol "View List" di `.menu`,
-// sehingga tidak perlu menunggu command ini dipanggil terpisah dulu.
 
 import { config } from '../../settings.js'
 import { uniquePlugins, groupByCategory, buildCategoryListButton } from './menu.js'

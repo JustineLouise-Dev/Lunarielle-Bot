@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Justine Louise.
-// Created by Justine Louise.
+// Copyright (c) 2026 Justine Louise & MioDev.
+// Created by Justine Louise & MioDev.
 //
 // This software is provided for personal and educational use only.
 // Commercial use, resale, or distribution for profit is strictly prohibited
@@ -8,7 +8,7 @@
 // Please respect the developer's work.
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
-// © 2026 Justine Louise. All Rights Reserved.
+// © 2026 Justine Louise & MioDev. All Rights Reserved.
 // ® Powered By Zapo-js
 //
 // settings.js
@@ -37,8 +37,17 @@ function loadConfigFile() {
 export const settings = loadConfigFile()
 export const config = settings
 
+export const OFFICIAL_CHANNEL_URL = 'https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M'
+
+const LOCKED_KEYS = ['channelUrl']
+
 export function updateSetting(key, value) {
   try {
+    if (LOCKED_KEYS.includes(key)) {
+      console.error(`[SETTINGS] Properti "${key}" dikunci (hardcoded) dan tidak bisa diubah.`)
+      return false
+    }
+
     const current = loadConfigFile()
 
     if (!(key in current)) {
@@ -50,7 +59,6 @@ export function updateSetting(key, value) {
 
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(current, null, 2) + '\n', 'utf8')
 
-    // sinkronkan object yang dipake di memori (module singleton)
     settings[key] = value
 
     return true

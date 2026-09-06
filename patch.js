@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Justine Louise.
-// Created by Justine Louise.
+// Copyright (c) 2026 Justine Louise & MioDev.
+// Created by Justine Louise & MioDev.
 //
 // This software is provided for personal and educational use only.
 // Commercial use, resale, or distribution for profit is strictly prohibited
@@ -8,7 +8,7 @@
 // Please respect the developer's work.
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
-// © 2026 Justine Louise. All Rights Reserved.
+// © 2026 Justine Louise & MioDev. All Rights Reserved.
 // ® Powered By Zapo-js
 
 import fs from 'fs'
@@ -109,12 +109,6 @@ Total:
 ══════════════════════════════════════
 `)
 
-// ─────────────────────────────────────────────────────────────
-// PATCH 2: ALBUM COLLECTION MEDIATYPE
-// zapo-js belum kenal albumMessage -> <enc> tanpa attribut
-// mediatype, harusnya "collection" kayak WA Web/app asli.
-// ─────────────────────────────────────────────────────────────
-
 const albumTargets = [
   ...['dist', 'dist/esm'].flatMap((base) => [
     path.join(__dirname, `node_modules/zapo-js/${base}/protocol/message.js`),
@@ -196,16 +190,6 @@ Total:
 ══════════════════════════════════════
 `)
 
-// ─────────────────────────────────────────────────────────────
-// PATCH 3: SHARP -> JIMP DI @zapo-js/media-utils
-// @zapo-js/media-utils meng-import `sharp` secara static (top
-// level) di sharp.js, jadi walau tidak pernah dipanggil, module
-// itu tetap gagal di-load kalau `sharp` (native binding) tidak
-// bisa jalan di device, contoh: Termux / Android arm64 tanpa
-// libvips. Kita timpa isi sharp.js supaya pakai `jimp` (pure JS)
-// dan sharp tidak pernah diimport sama sekali.
-// ─────────────────────────────────────────────────────────────
-
 const SHARP_SHIM_MARKER = '/* OVERRIDE_SHARP_TO_JIMP_PATCH */'
 
 const sharpShimTargets = [
@@ -266,17 +250,6 @@ Total:
   ${sharpShimMissing} tidak ditemukan
 ══════════════════════════════════════
 `)
-
-// ─────────────────────────────────────────────────────────────
-// PATCH 4: better-sqlite3 DI TERMUX/ANDROID
-// Di Termux, process.platform bernilai "android", bukan "linux".
-// better-sqlite3 cuma cek daftar platform ['linux','darwin','win32']
-// buat nyari prebuilt binary, jadi walau prebuilds/linux-arm64.node
-// valid dan cocok dipakai di Termux, dia gak pernah kepakai dan
-// fallback ke build/Release yang emang gak pernah ada (paket ini
-// gak build otomatis lewat node-gyp, cuma pakai prebuilds/).
-// Kita patch getPrebuildPath() supaya anggap "android" == "linux".
-// ─────────────────────────────────────────────────────────────
 
 const SQLITE_PATCH_MARKER = '/* OVERRIDE_ANDROID_TERMUX_PATCH */'
 

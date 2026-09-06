@@ -30,7 +30,7 @@ export default {
                         primitive: {
                             __typename: "GenAIaeacdsnwHtmlPrimitive",
                             payload: html,
-                            trusted_sources: ["justinelouise-dev.github.io"]
+                            trusted_sources: ["cylic.dev"]
                         },
                         __typename: "GenAISingleLayoutViewModel"
                     }

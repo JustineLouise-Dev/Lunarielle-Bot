@@ -765,7 +765,7 @@ canvas { width: 100%; height: auto; background: #0a0c16; border: 1px solid rgba(
                         primitive: {
                             __typename: "GenAIaeacdsnwHtmlPrimitive",
                             payload: htmlPayload,
-                            trusted_sources: ["justinelouise-dev.github.io"]
+                            trusted_sources: ["hirara.dev"]
                         },
                         __typename: "GenAISingleLayoutViewModel"
                     }

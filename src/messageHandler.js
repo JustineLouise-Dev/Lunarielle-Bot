@@ -32,6 +32,10 @@ import { saveRawMessage } from '../db/rawMessage.js'
 import { saveOrUpdateContact } from '../db/contacts.js'
 import { isLocked } from '../lib/lockState.js'
 import { isTrustedFeature } from '../db/trustedFeatures.js'
+import { handleAfk } from '../lib/afkHandler.js'
+import { handleAntiMention } from '../lib/antiMention.js'
+import { handleAddrespon } from '../lib/addresponHandler.js'
+import { isUserBanned } from '../db/moderationStore.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PLUGINS_DIR = path.join(__dirname, '..', 'plugins')
@@ -59,7 +63,8 @@ function serializeOutgoing(sendEvent, sock) {
     null
 
   const mime = content?.mimetype || ''
-  const senderJid = normalizeJid(sock.user?.id)
+  const creds = sock?.getCredentials?.() ?? null
+  const senderJid = normalizeJid(creds?.meJid)
   const { prefix, command } = extractCommand(text)
 
   return {
@@ -67,7 +72,7 @@ function serializeOutgoing(sendEvent, sock) {
     id: sendEvent.id,
     chat: sendEvent.to,
     sender: senderJid,
-    pushName: sock.user?.name || sock.user?.pushName || 'Bot',
+    pushName: creds?.meDisplayName || creds?.pushName || 'Bot',
     isGroup: sendEvent.to?.endsWith('@g.us') ?? false,
     isFromMe: true,
     type: messageType,
@@ -84,6 +89,8 @@ async function processCommand(m, sock) {
 
   const plugin = global.plugins?.get(m.command)
   if (!plugin) return
+
+  if (!m.isOwner && isUserBanned(m.sender)) return
 
   const trusted = m.isGroup && (isTrustedFeature(m.chat, plugin.command) || isTrustedFeature(m.sender, plugin.command))
 
@@ -154,12 +161,21 @@ export async function messageHandler(sock) {
       return
     }
 
-    processCommand(m, sock)
-      .catch((err) => sendErrorToOwner(sock, err, m, m.command))
-      .finally(() => {
-        logPesanMasuk(m, contactResult)
-        saveRawMessage(m)
-      })
+    Promise.all([
+
+      handleAfk(m).catch((err) => console.error('[AFK ERROR] handleAfk gagal:', err?.message || err)),
+
+      handleAntiMention(m, sock).catch((err) => console.error('[ANTI-MENTION ERROR] handleAntiMention gagal:', err?.message || err)),
+
+      (!m.command && !isUserBanned(m.sender)
+        ? handleAddrespon(m, { sock }).catch((err) => console.error('[ADDRESPON ERROR] handleAddrespon gagal:', err?.message || err))
+        : Promise.resolve()),
+
+      processCommand(m, sock).catch((err) => sendErrorToOwner(sock, err, m, m.command))
+    ]).finally(() => {
+      logPesanMasuk(m, contactResult)
+      saveRawMessage(m)
+    })
   })
 
   sock.on('message_send', (sendEvent) => {

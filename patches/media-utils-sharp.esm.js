@@ -10,7 +10,7 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-/* OVERRIDE_SHARP_TO_JIMP_PATCH */
+
 import { Jimp } from 'jimp';
 
 async function readImage(input) {

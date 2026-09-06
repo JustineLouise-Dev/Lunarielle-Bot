@@ -10,11 +10,11 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/grup/swgc.js
+// plugins/group/swgc.js
 
 export default {
   command: 'swgc',
-  category: 'grup',
+  category: 'group',
   description: 'Kirim pesan sebagai status grup.\n\n*Format:* .swgc [teks|emoji]\n*Wajib:* Reply pesan',
   help: '[teks|emoji] (reply pesan)',
   onlyAdmin: true,

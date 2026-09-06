@@ -11,7 +11,7 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 "use strict";
-/* OVERRIDE_SHARP_TO_JIMP_PATCH */
+
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateImageThumbnail = generateImageThumbnail;
 exports.generateStickerThumbnail = generateStickerThumbnail;

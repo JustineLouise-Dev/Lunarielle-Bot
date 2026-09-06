@@ -15,8 +15,9 @@
 import qrcode from 'qrcode-terminal'
 import chalk from 'chalk'
 import readline from 'node:readline'
-import { config } from '../settings.js'
+import { config, OFFICIAL_CHANNEL_URL } from '../settings.js'
 import { handleRestartNotification } from '../lib/notifRestart.js'
+import { parseChannelTarget } from '../lib/utils.js'
 
 const BANNER_WIDTH = 60
 const MAX_RECONNECT_ATTEMPTS = 10
@@ -118,9 +119,48 @@ function createReconnector(sock) {
   }
 }
 
+async function isAlreadyFollowingChannel(sock, jid) {
+  try {
+    const subscribed = await sock.newsletter.listSubscribed()
+    return (subscribed || []).some(nl => nl?.jid === jid)
+  } catch (err) {
+    console.error(chalk.red('[CHANNEL] Gagal cek daftar subscribed, lanjut coba follow:'), err?.message || err)
+    return false
+  }
+}
+
+async function autoFollowOfficialChannel(sock) {
+  try {
+    const { invite, jid: parsedJid } = parseChannelTarget(OFFICIAL_CHANNEL_URL)
+    let jid = parsedJid
+
+    if (!jid && invite) {
+      const metadata = await sock.newsletter.fetchByInvite(invite)
+      jid = metadata?.jid
+    }
+
+    if (!jid) {
+      console.error(chalk.red('[CHANNEL] Gagal resolve JID channel resmi, auto-follow dibatalkan.'))
+      return
+    }
+
+    const alreadyFollowing = await isAlreadyFollowingChannel(sock, jid)
+    if (alreadyFollowing) {
+      console.log(chalk.gray(`[CHANNEL] Sudah bergabung di channel resmi (${jid}), skip follow.`))
+      return
+    }
+
+    await sock.newsletter.follow(jid)
+    console.log(chalk.green(`[CHANNEL] Berhasil follow channel resmi (${jid})`))
+  } catch (err) {
+    console.error(chalk.red('[CHANNEL] Gagal auto-follow channel resmi:'), err?.message || err)
+  }
+}
+
 export function connectionHandler(sock) {
   const { reconnect, resetAttempts } = createReconnector(sock)
   let isPairingRequested = false
+  let hasAutoFollowed = false
 
   sock.on('connection', (event) => {
     logEvent('connection')(event)
@@ -131,12 +171,17 @@ export function connectionHandler(sock) {
       handleRestartNotification(sock).catch(err => {
         console.error(chalk.red('[RESTART NOTIF ERROR]:'), err?.message || err)
       })
+
+      if (!hasAutoFollowed) {
+        hasAutoFollowed = true
+        void autoFollowOfficialChannel(sock)
+      }
       return
     }
 
     if (event.isLogout) {
       console.log(chalk.bgRed.white.bold('\n ⚠️ [WA] Device di-logout dari HP. Perlu pairing ulang. \n'))
-      return 
+      return
     }
 
     console.log(chalk.yellow(`[WA] Koneksi terputus: ${event.reason ?? 'unknown'} (code: ${event.code ?? '-'})`))
@@ -175,22 +220,18 @@ export function connectionHandler(sock) {
     }
   })
 
-  // event lain, kalau mau aktifkan, di settings.js ya 
-  
   const knownEvents = [
-    // messages (selain 'message')
+
     'message_send',
     'message_addon',
     'message_protocol',
     'message_bot_chunk',
     'message_unavailable',
 
-    // presence & chat-state
     'presence',
     'chatstate',
     'call',
 
-    // groups, newsletters & profiles
     'group',
     'newsletter',
     'newsletter_message_update',
@@ -199,7 +240,6 @@ export function connectionHandler(sock) {
     'privacy',
     'blocklist',
 
-    // state, history & MEX
     'mutation',
     'mutation_send',
     'history_sync_chunk',
@@ -208,12 +248,10 @@ export function connectionHandler(sock) {
     'offline_thread_metadata',
     'mex_notification',
 
-    // companion host (mobile-primary only)
     'companion_host_linked',
     'companion_host_revoked',
     'companion_host_error',
 
-    // failures (bisa mendahului disconnect, tetap di-log)
     'stream_failure',
     'stanza_error',
   ]

@@ -1,7 +1,3 @@
-//plugins/bot/starmedia.js
-
-// 🎵 Lunarielle-style music player
-
 import fs from 'fs';
 
 export default {
@@ -12,7 +8,6 @@ export default {
     execute: async (m, { sock }) => {
         const targetChat = m.chat;
 
-        // ========== AUDIO BASE64 ==========
         const audioPath = './src/menu.mp3';
         let audioSrc = '';
         let audioError = false;
@@ -24,7 +19,6 @@ export default {
             audioError = true;
         }
 
-        // ========== IMAGE BASE64 (COVER) ==========
         const imagePath = './src/cover.jpg';
         let imageSrc = '';
         let imageError = false;
@@ -45,7 +39,6 @@ export default {
             return;
         }
 
-        // ========== HTML LUNARIELLE PLAYER ==========
         const html = `<style>
 *{
   box-sizing:border-box;
@@ -921,7 +914,6 @@ setPlayingState(false);
 })();
 </script>`;
 
-        // ========== BUNGKUS DALAM RICH RESPONSE ==========
         const responseData = {
             response_id: "lunarielle-music-" + Date.now(),
             sections: [
@@ -930,7 +922,7 @@ setPlayingState(false);
                         primitive: {
                             __typename: "GenAIaeacdsnwHtmlPrimitive",
                             payload: html,
-                            trusted_sources: ["justinelouise-dev.github.io"]
+                            trusted_sources: []
                         },
                         __typename: "GenAISingleLayoutViewModel"
                     }

@@ -815,7 +815,7 @@ rafId=requestAnimationFrame(loop);
                         primitive: {
                             __typename: "GenAIaeacdsnwHtmlPrimitive",
                             payload: html,
-                            trusted_sources: ["justinelouise-dev.github.io"]
+                            trusted_sources: []
                         },
                         __typename: "GenAISingleLayoutViewModel"
                     }

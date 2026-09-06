@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Justine Louise.
-// Created by Justine Louise.
+// Copyright (c) 2026 Justine Louise & MioDev.
+// Created by Justine Louise & MioDev.
 //
 // This software is provided for personal and educational use only.
 // Commercial use, resale, or distribution for profit is strictly prohibited
@@ -8,7 +8,7 @@
 // Please respect the developer's work.
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
-// © 2026 Justine Louise. All Rights Reserved.
+// © 2026 Justine Louise & MioDev. All Rights Reserved.
 // ® Powered By Zapo-js
 // handler.js
 
@@ -23,7 +23,8 @@ import {
   getGroupMetadata,
   getCachedGroupMetadata,
   isAdminInGroup,
-  isSuperAdminInGroup
+  isSuperAdminInGroup,
+  isBotAdminInGroup
 } from './db/groupCache.js'
 import {
   lazy,
@@ -230,10 +231,6 @@ function serializeQuoted(context, chatJid, isGroup, sock) {
   return quoted
 }
 
-// Mencocokkan sender terhadap nomor owner, dengan menangani kasus WhatsApp
-// mengirim participant sebagai LID (mis. "123456789@lid") alih-alih nomor
-// telepon asli. Kalau sender berupa LID, cek juga pasangan PN-nya lewat
-// tabel contacts (kalau sudah pernah tersimpan) atau key.participantAlt.
 function matchesOwner(sender, key) {
   const candidates = new Set()
 
@@ -337,7 +334,7 @@ export function serializeMessage(event, sock) {
         enumerable: true, configurable: true
       },
       isBotAdmin: {
-        get() { return isAdminInGroup(this.chat, normalizeJid(sock.user?.id)) },
+        get() { return isBotAdminInGroup(this.chat, sock) },
         enumerable: true, configurable: true
       },
       isOwnerGroup: {
@@ -468,7 +465,7 @@ export function buildEvalContext(m, sock) {
     jid: m.chat,
     from: m.chat,
     sender: m.sender,
-    me: sock?.user?.id || sock?.user?.jid || null,
+    me: sock?.getCredentials?.()?.meJid || null,
     process,
     Buffer,
     require,

@@ -1,5 +1,3 @@
-// plugins/help/creator.js
-
 import { buildCreatorContactMessage } from '../../lib/creatorInfo.js'
 
 export default {
