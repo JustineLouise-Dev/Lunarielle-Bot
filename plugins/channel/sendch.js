@@ -10,123 +10,106 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/chanel/sendch.js
-import { getRawMessageById } from '../../db/rawMessage.js'
-import { parseChannelTarget } from '../../lib/utils.js'
+// plugins/channel/sendch.js
+
+import { parseChannelTarget, getQuotedText } from '../../lib/utils.js'
+import { downloadQuotedMedia } from '../../lib/wrapper.js'
 
 const MEDIA_TYPE_MAP = {
-  imageMessage: 'image',
-  videoMessage: 'video',
-  audioMessage: 'audio',
-  documentMessage: 'document',
-  stickerMessage: 'sticker'
+    imageMessage: 'image',
+    videoMessage: 'video',
+    audioMessage: 'audio',
+    documentMessage: 'document',
+    stickerMessage: 'sticker'
 }
 
-function stripUnsendable(obj) {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj
-  delete obj.messageContextInfo
-  return obj
-}
-
-export default {
-  command: 'sendch',
-  alias: ['sendchanel', 'sendchannel', 'sch'],
-  category: 'channel',
-  description: 'Mengirim ulang pesan yang di-reply ke channel WhatsApp.\n\n' +
-    '*Format Penggunaan:*\n' +
-    '> `Mengirim ke URL channel`\n> .sendch <url channel>\n\n' +
-    '> `Mengirim ke JID channel`\n> .sendch <jid channel>',
-  help: '`(reply pesan)`',
-  ownerOnly: true,
-  typing: true,
-
-  async execute(m, { sock, args }) {
-
-    if (!m.quoted) return m.reply('❌ Reply pesan yang mau dikirim ke channel dulu ya kak.')
-
-    const raw = args.join(' ')
-    const { invite, jid } = parseChannelTarget(raw)
-
-    if (!invite && !jid) {
-      return m.reply(`Kirim link atau JID channel tujuan!\n\nContoh:\n> \`${m.prefix}${m.command} <url chanel>\`\n> \`${m.prefix}${m.command} <jid chanel>\``)
+export default async function sendch(m, { conn, args }) {
+    if (!m.quoted) {
+        return m.reply('❌ Reply pesan yang mau dikirim ke channel dulu ya kak.')
     }
 
-    let targetJid = jid
+    const raw = args.join(' ')
+    const { invite, jid: parsedJid } = parseChannelTarget(raw)
+
+    if (!invite && !parsedJid) {
+        return m.reply(
+            `Kirim link atau JID channel tujuan!\n\n` +
+            `Contoh:\n` +
+            `> \`${m.prefix}${m.command} <url channel>\`\n` +
+            `> \`${m.prefix}${m.command} <jid channel>\``
+        )
+    }
+
+    let targetJid = parsedJid
     let channelName = null
 
     try {
-      const metadata = targetJid
-        ? await sock.newsletter.fetch(targetJid)
-        : await sock.newsletter.fetchByInvite(invite)
-      targetJid = metadata.jid
-      channelName = metadata.name
+        const metadata = targetJid
+            ? await conn.newsletterMetadata('jid', targetJid)
+            : await conn.newsletterMetadata('invite', invite)
+        targetJid = metadata.id || metadata.jid
+        channelName = metadata.name
     } catch {
-      return m.reply('❌ Link/JID channel tidak valid atau channel tidak ditemukan.')
+        return m.reply('❌ Link/JID channel tidak valid atau channel tidak ditemukan.')
     }
 
-    const quotedId = m.quoted.key?.id
-    const stored = quotedId ? getRawMessageById(quotedId) : null
-    const msgContent = stored?.raw?.message ?? m.quoted.full
+    const msgContent = m.quoted.message
 
     if (!msgContent || Object.keys(msgContent).length === 0) {
-      return m.reply('❌ Isi pesan kosong, gak ada yang bisa dikirim.')
+        return m.reply('❌ Isi pesan kosong, gak ada yang bisa dikirim.')
     }
-
-    stripUnsendable(msgContent)
 
     const msgType = Object.keys(msgContent)[0]
     const mediaKind = MEDIA_TYPE_MAP[msgType]
 
-    let uploadContent
+    let sendPayload
 
     if (mediaKind) {
-      const mediaField = msgContent[msgType]
+        const mediaField = msgContent[msgType]
 
-      let mediaBuffer
-      try {
-        mediaBuffer = await m.quoted.download()
-      } catch (err) {
-        return m.reply(`❌ Gagal download media: ${err.message}`)
-      }
+        let mediaBuffer
+        try {
+            mediaBuffer = await downloadQuotedMedia(m.quoted)
+        } catch (err) {
+            return m.reply(`❌ Gagal download media: ${err.message}`)
+        }
 
-      uploadContent = {
-        type: mediaKind,
-        media: mediaBuffer,
-        mimetype: mediaField.mimetype,
-        caption: mediaField.caption || undefined,
-        jpegThumbnail: mediaField.jpegThumbnail || undefined,
-        contextInfo: mediaField.contextInfo || undefined
-      }
+        sendPayload = {
+            [mediaKind]: mediaBuffer,
+            mimetype: mediaField.mimetype,
+            caption: mediaField.caption || undefined
+        }
+
+        if (mediaKind === 'sticker') {
+
+            sendPayload = { sticker: mediaBuffer }
+        }
+    } else if (msgType === 'conversation' || msgType === 'extendedTextMessage') {
+        const text = getQuotedText(m.quoted)
+        if (!text) {
+            return m.reply('❌ Isi pesan kosong, gak ada yang bisa dikirim.')
+        }
+        sendPayload = { text }
     } else {
-      uploadContent = msgContent
+        return m.reply(`❌ Tipe pesan \`${msgType}\` belum didukung untuk dikirim ke channel.`)
     }
 
-    let sendResult
     try {
-      sendResult = await sock.newsletter.send(targetJid, uploadContent)
+        await conn.sendMessage(targetJid, sendPayload)
     } catch (err) {
-      return m.reply(`❌ Gagal kirim ke channel: ${err.message}`)
+        return m.reply(`❌ Gagal kirim ke channel: ${err.message}`)
     }
 
-    const serverMessageId = sendResult.ackNode?.attrs?.server_id ?? sendResult.ack?.server_id ?? sendResult.id
-
-    if (!msgContent[msgType].contextInfo) {
-      msgContent[msgType].contextInfo = {
-        mentionedJid: [],
-        groupMentions: [],
-        statusAttributions: []
-      }
-    }
-
-    msgContent[msgType].contextInfo.forwardingScore = 1
-    msgContent[msgType].contextInfo.isForwarded = true
-    msgContent[msgType].contextInfo.forwardedNewsletterMessageInfo = {
-      newsletterJid: targetJid,
-      serverMessageId: parseInt(serverMessageId, 10) || 0,
-      newsletterName: channelName
-    }
-    msgContent[msgType].contextInfo.forwardOrigin = 0
-
-    return sock.message.send(m.chat, msgContent)
-  }
+    await m.reply(`✅ Berhasil dikirim ke channel${channelName ? `:\n*${channelName}*` : ''}`)
 }
+
+sendch.command = 'sendch'
+sendch.alias = ['sendchanel', 'sendchannel', 'sch']
+sendch.category = 'channel'
+sendch.description = 'Mengirim ulang pesan yang di-reply ke channel WhatsApp.\n\n' +
+    '*Format Penggunaan:*\n' +
+    '> `Mengirim ke URL channel`\n> .sendch <url channel>\n\n' +
+    '> `Mengirim ke JID channel`\n> .sendch <jid channel>\n\n' +
+    '`(reply pesan)`'
+sendch.owner = true
+sendch.typing = true

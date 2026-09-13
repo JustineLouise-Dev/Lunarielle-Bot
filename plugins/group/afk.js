@@ -18,7 +18,7 @@ export default {
   command: 'afk',
   category: 'group',
   description: 'Menandai kamu sebagai AFK (Away From Keyboard) dengan alasan opsional (khusus di grup).',
-  groupOnly: true,
+  group: true,
   typing: true,
 
   async execute(m, { args }) {

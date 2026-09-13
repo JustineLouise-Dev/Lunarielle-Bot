@@ -11,6 +11,7 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/group/idgc.js
+
 import { buildQuoteContext } from '../../lib/utils.js'
 
 export default {
@@ -21,7 +22,7 @@ export default {
 
 \`Cara Penggunaan:\`
 > langsung kirim perintah: \`.idgc\` (hanya di dalam grup)`,
-  groupOnly: true,
+  group: true,
   typing: true,
 
   async execute(m) {

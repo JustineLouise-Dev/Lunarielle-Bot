@@ -10,14 +10,16 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/game/tetris.js
+// plugins/interactive/tetris.js
+
+import { sendRichHtml } from '../../lib/richmessage.js'
 
 export default {
     command: 'tetris',
     alias: ['blok', 'tetrominoes'],
     category: 'interactive',
     description: '🧱 Main game Tetris klasik langsung di chat',
-    execute: async (m, { sock }) => {
+    execute: async (m, { conn }) => {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -751,58 +753,12 @@ rafId=requestAnimationFrame(loop);
 })();
 </script>`;
 
-        const responseData = {
-            response_id: "lunarielle-tetris-" + Date.now(),
-            sections: [
-                {
-                    view_model: {
-                        primitive: {
-                            __typename: "GenAIaeacdsnwHtmlPrimitive",
-                            payload: html,
-                            trusted_sources: []
-                        },
-                        __typename: "GenAISingleLayoutViewModel"
-                    }
-                }
-            ]
-        };
-
-        const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
-
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • TETRIS"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
+            await sendRichHtml(conn, targetChat, html, {
+                title: 'LUNARIELLE • TETRIS'
             });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Tetris: ${err?.message || err}`
             });
         }

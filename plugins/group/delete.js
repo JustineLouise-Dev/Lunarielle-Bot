@@ -12,7 +12,7 @@
 // ® Powered By Zapo-js
 // plugins/group/delete.js
 
-import { refreshBotAdminStatus } from '../../db/groupCache.js'
+import { isOwnerSender, isSenderAdmin, isBotAdmin } from '../../lib/permissions.js'
 
 export default {
   command: 'delete',
@@ -21,22 +21,21 @@ export default {
   description: 'Menghapus pesan yang di-reply (admin grup di grup, siapa saja di private chat untuk pesan bot sendiri).',
   typing: true,
 
-  async execute(m, { sock }) {
+  async execute(m, { conn }) {
     const quoted = m.quoted
 
     if (!quoted) {
       return m.reply(`⚠️ Reply pesan yang mau dihapus, lalu ketik \`${m.prefix}${m.command}\`.`)
     }
 
-    if (m.isGroup && !m.isOwner) {
-      if (!m.isAdmin) {
+    if (m.isGroup && !isOwnerSender(m)) {
+      const senderIsAdmin = await isSenderAdmin(m, conn)
+
+      if (!senderIsAdmin) {
         return m.reply('❌ Perintah ini khusus admin grup.')
       }
 
-      let botIsAdmin = m.isBotAdmin
-      if (!botIsAdmin) {
-        botIsAdmin = await refreshBotAdminStatus(m.chat, sock)
-      }
+      const botIsAdmin = await isBotAdmin(m, conn)
 
       if (!botIsAdmin) {
         return m.reply('❌ Bot harus menjadi admin dulu supaya bisa menghapus pesan orang lain di grup ini.')
@@ -48,15 +47,7 @@ export default {
     }
 
     try {
-      await sock.message.send(m.chat, {
-        type: 'revoke',
-        target: {
-          remoteJid: m.chat,
-          id: quoted.key.id,
-          fromMe: quoted.key.fromMe,
-          participant: quoted.key.fromMe ? undefined : quoted.key.participant
-        }
-      })
+      await conn.sendMessage(m.chat, { delete: quoted.key })
     } catch (e) {
       console.error('[DELETE ERROR]', e?.message || e)
       await m.reply(

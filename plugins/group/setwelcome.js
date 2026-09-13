@@ -28,8 +28,8 @@ export default {
   command: 'setwelcome',
   category: 'group',
   description: 'Mengatur teks sambutan otomatis untuk member baru (mendukung $subject, $user, $desc, $members).',
-  groupOnly: true,
-  adminOnly: true,
+  group: true,
+  admin: true,
   typing: true,
 
   async execute(m, { args }) {

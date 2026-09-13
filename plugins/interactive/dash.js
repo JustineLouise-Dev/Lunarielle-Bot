@@ -12,6 +12,8 @@
 // ® Powered By Zapo-js
 // plugins/bot/dash.js
 
+import { sendRichHtml } from '../../lib/richmessage.js'
+
 const DASH_HTML = `<style>
 
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -35,6 +37,14 @@ body{background:linear-gradient(165deg,#071538,#040a1e 60%,#02061a);padding:8px;
 .hr i{display:block;font:700 7px Arial;font-style:normal;letter-spacing:1px;color:#7a9cc8}
 
 .hr b{font:900 13px 'Arial Black';color:#ffd75e;font-variant-numeric:tabular-nums}
+
+.hpwrap{background:rgba(0,0,0,.42);border:1px solid rgba(88,199,255,.3);border-radius:9px;padding:3px 8px;min-width:78px}
+
+.hpwrap i{display:block;font:700 7px Arial;font-style:normal;letter-spacing:1px;color:#7a9cc8;margin-bottom:2px}
+
+.hpbar{width:100%;height:8px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden}
+
+.hpfill{height:100%;border-radius:5px;background:linear-gradient(90deg,#4ade80,#22c55e);transition:width .18s ease,background .18s ease;width:100%}
 
 .mbtn{width:34px;height:34px;border:2px solid rgba(88,199,255,.3);border-radius:9px;background:rgba(0,0,0,.42);color:#fff;font-size:15px;cursor:pointer;touch-action:none}
 
@@ -60,13 +70,13 @@ canvas{width:100%;display:block;touch-action:none}
 
 <div id="app">
 
-<div class="hdr"><div class="tt">🌀 SPEEDY DASH<small>EMERALD COAST RUN</small></div><div class="hrs"><div class="hr"><i>RINGS</i><b id="rg">0</b></div><div class="hr"><i>SCORE</i><b id="sc">0</b></div><div class="hr"><i>BEST</i><b id="bs">0</b></div><button class="mbtn" id="muteB">🔊</button></div></div>
+<div class="hdr"><div class="tt">🌀 SPEEDY DASH<small>EMERALD COAST RUN</small></div><div class="hrs"><div class="hpwrap"><i>HP</i><div class="hpbar"><div class="hpfill" id="hpfill"></div></div></div><div class="hr"><i>RINGS</i><b id="rg">0</b></div><div class="hr"><i>SCORE</i><b id="sc">0</b></div><div class="hr"><i>BEST</i><b id="bs">0</b></div><button class="mbtn" id="muteB">🔊</button></div></div>
 
 <div class="gw"><canvas id="cv" width="404" height="300"></canvas></div>
 
 <div class="pads"><button class="pd" id="boostB">⚡ BOOST</button><button class="pd" id="jumpB">⤒ JUMP</button></div>
 
-<div class="hint">Lompat saat garis merah LASER kedip cepat! · kena musuh = ring turun 10% saja · tiap 50 ring = BOSS! · 🔊 = sound</div>
+<div class="hint">Lompat saat garis merah LASER kedip cepat! · kena musuh = HP berkurang · tiap 50 ring = BOSS! · 🔊 = sound</div>
 
 </div>
 
@@ -82,7 +92,7 @@ var cv=document.getElementById('cv'),x=cv.getContext('2d'),W=404,H=300;
 
 var DPR=2;cv.width=W*DPR;cv.height=H*DPR;
 
-var rgEl=document.getElementById('rg'),scEl=document.getElementById('sc'),bsEl=document.getElementById('bs');
+var rgEl=document.getElementById('rg'),scEl=document.getElementById('sc'),bsEl=document.getElementById('bs'),hpEl=document.getElementById('hpfill');
 
 var BEST=0;try{BEST=parseInt(localStorage.getItem('dash_best')||'0',10)||0}catch(e){}
 
@@ -230,9 +240,11 @@ setInterval(function(){var a=AC;if(!a)return;if(state!=='play'){mNext=a.currentT
 
 /* ============ STATE ============ */
 
-var state='ready',score=0,rings=0,best=BEST,boost=0,boostOn=false,boostT=0,
+var HP_MAX=100,HURT_DAMAGE=25;
 
-camX=0,speed=6.2,milestone=1,shake=0,flash=0,wflash=0,iframe=0,frame=0,
+var state='ready',score=0,rings=0,best=BEST,boost=0,boostOn=false,boostT=0,hp=HP_MAX,
+
+camX=0,speed=3.4,milestone=1,shake=0,flash=0,wflash=0,iframe=0,frame=0,
 
 CY=200,CX=120,vy=0,grounded=true,rot=0,overT=0,eyeB=0,
 
@@ -248,13 +260,15 @@ var laser=null,laserCd=520,boss=null,bossWarnT=0,bossNext=50;
 
 function gy(wx){return 242-(Math.sin(wx*0.0045)*13+Math.sin(wx*0.012)*5)}
 
+setHp(HP_MAX);
+
 for(var i=0;i<5;i++)clouds.push({x:Math.random()*404,y:14+Math.random()*55,s:.08+Math.random()*.12,w:44+Math.random()*46});
 
 for(i=0;i<4;i++)clouds2.push({x:Math.random()*404,y:48+Math.random()*45,s:.26+Math.random()*.16,w:62+Math.random()*58});
 
 function reset(){
 
-score=0;rings=0;boost=0;boostOn=false;boostT=0;speed=6.2;milestone=1;
+score=0;rings=0;boost=0;boostOn=false;boostT=0;speed=3.4;milestone=1;setHp(HP_MAX);
 
 camX=0;CY=gy(120)-16;vy=0;grounded=true;rot=0;iframe=0;
 
@@ -386,6 +400,20 @@ function dustF(n){for(var i=0;i<n;i++)dusts.push({x:camX+CX+(Math.random()-.5)*1
 
 function popup(sx,y,txt,c){pops.push({sx:sx,y:y,t:1,txt:txt,c:c})}
 
+function setHp(v){
+
+hp=Math.max(0,Math.min(HP_MAX,v));
+
+if(hpEl){
+
+hpEl.style.width=hp+'%';
+
+hpEl.style.background=hp>55?'linear-gradient(90deg,#4ade80,#22c55e)':(hp>25?'linear-gradient(90deg,#ffd75e,#e09406)':'linear-gradient(90deg,#ff6a6a,#e0243a)');
+
+}
+
+}
+
 function scatterRings(){
 
 var n=Math.min(14,Math.max(1,Math.floor(rings*.1)));
@@ -420,9 +448,11 @@ if(iframe>0)return;
 
 if(!laserHit&&boostOn)return;
 
-if(rings>0){var n=scatterRings();iframe=110;sHurt();shake=10;flash=.6;wob.v=1.1;qwob.v=1.4;popup(CX,CY-26,'-'+n,'#ff5c7a')}
+setHp(hp-HURT_DAMAGE);
 
-else die();
+iframe=110;sHurt();shake=10;flash=.6;wob.v=1.1;qwob.v=1.4;popup(CX,CY-26,'-'+HURT_DAMAGE+' HP','#ff5c7a');
+
+if(hp<=0)die();
 
 }
 
@@ -640,7 +670,7 @@ if(boost>=25&&!pinged){pinged=true;sReady()}
 
 if(boost<20)pinged=false;
 
-if(score>=milestone*500){milestone++;speed=Math.min(9.2,speed+.5);banner={t:0,txt:'SPEED UP!'};sMile()}
+if(score>=milestone*500){milestone++;speed=Math.min(6.0,speed+.35);banner={t:0,txt:'SPEED UP!'};sMile()}
 
 if(!laser&&!boss&&bossWarnT<=0&&score>700){
 
@@ -1758,12 +1788,7 @@ requestAnimationFrame(loop);
 
 </script>`;
 
-export default {
-  command: 'dash',
-  alias: ['sonic', 'speedy', 'speeddash', 'lari'],
-  category: 'interactive',
-  description: '🌀 Speedy Dash v4 - Platformer with laser & boss fight!',
-  execute: async (m, { sock }) => {
+export default async function dash(m, { conn, args, text, command }) {
     try {
       const target = m.chat;
       const data = {
@@ -1780,20 +1805,16 @@ export default {
         }]
       };
       const b64 = Buffer.from(JSON.stringify(data)).toString('base64');
-      await sock.message.send(target, {
-        botForwardedMessage: {
-          message: {
-            richResponseMessage: {
-              messageType: 1,
-              submessages: [{ messageType: 2, messageText: "🌀 SPEEDY DASH" }],
-              unifiedResponse: { data: b64 },
-              contextInfo: { forwardingScore: 999, isForwarded: true, forwardOrigin: 4 }
-            }
-          }
-        }
-      }, { additionalAttributes: { type: "text" } });
+      const sendResult = await sendRichHtml(conn, target, null, {
+        title: '🌀 SPEEDY DASH',
+        base64Data
+      });
     } catch (e) {
-      await sock.message.send(m.chat, { text: '❌ Gagal memuat game: ' + e.message });
+      await conn.sendMessage(m.chat, { text: '❌ Gagal memuat game: ' + e.message });
     }
   }
-};
+
+dash.command = 'dash'
+dash.alias = ['sonic', 'speedy', 'speeddash', 'lari']
+dash.category = 'interactive'
+dash.description = "🌀 Speedy Dash v4 - Platformer with laser & boss fight!"

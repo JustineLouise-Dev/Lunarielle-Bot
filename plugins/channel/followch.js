@@ -10,45 +10,50 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/chanel/followch.js
-import { parseChannelTarget } from '../../lib/utils.js'
+// plugins/channel/followch.js
 
-export default {
-  command: 'followch',
-  alias: ['followchanel', 'followchannel', 'fch'],
-  category: 'channel',
-  description: 'Mengikuti channel WhatsApp dari link atau JID.\n\n' +
-    '*Format Penggunaan:*\n' +
-    '> `Menggunakan URL channel`\n> .followch <url channel>\n\n' +
-    '> `Menggunakan JID channel`\n> .followch <jid channel>\n\n' +
-    '> `Menggunakan link channel dari pesan yang di-reply`\n> .followch',
-  ownerOnly: true,
-  typing: true,
+import { parseChannelTarget, getQuotedText } from '../../lib/utils.js'
 
-  async execute(m, { sock, args }) {
-
-    const raw = args.join(' ') || m.quoted?.text || ''
+export default async function followch(m, { conn, args }) {
+    const raw = args.join(' ') || getQuotedText(m.quoted)
     const { invite, jid: parsedJid } = parseChannelTarget(raw)
 
     if (!invite && !parsedJid) {
-      return m.reply(`Kirim link atau JID channel yang valid!\n\nContoh:\n> \`${m.prefix}${m.command} <url chanel>\`\n> \`${m.prefix}${m.command} <jid chanel>\`\n\natau reply pesan berisi link channel lalu ketik:\n> \`${m.prefix}${m.command}\``)
+        return m.reply(
+            `Kirim link atau JID channel yang valid!\n\n` +
+            `Contoh:\n` +
+            `> \`${m.prefix}${m.command} <url channel>\`\n` +
+            `> \`${m.prefix}${m.command} <jid channel>\`\n\n` +
+            `atau reply pesan berisi link channel lalu ketik:\n` +
+            `> \`${m.prefix}${m.command}\``
+        )
     }
 
     let jid = parsedJid
     let name = null
 
     try {
-      if (!jid) {
-        const metadata = await sock.newsletter.fetchByInvite(invite)
-        jid = metadata.jid
-        name = metadata.name
-      }
+        if (!jid) {
+            const metadata = await conn.newsletterMetadata('invite', invite)
+            jid = metadata.id || metadata.jid
+            name = metadata.name
+        }
 
-      await sock.newsletter.follow(jid)
+        await conn.newsletterFollow(jid)
     } catch {
-      return m.reply('Gagal follow channel, link/JID tidak valid atau channel tidak ditemukan.')
+        return m.reply('Gagal follow channel, link/JID tidak valid atau channel tidak ditemukan.')
     }
 
     await m.reply(`✅ Berhasil follow channel${name ? `:\n*${name}*` : ''}\n\`\`\`${jid}\`\`\``)
-  }
 }
+
+followch.command = 'followch'
+followch.alias = ['followchanel', 'followchannel', 'fch']
+followch.category = 'channel'
+followch.description = 'Mengikuti channel WhatsApp dari link atau JID.\n\n' +
+    '*Format Penggunaan:*\n' +
+    '> `Menggunakan URL channel`\n> .followch <url channel>\n\n' +
+    '> `Menggunakan JID channel`\n> .followch <jid channel>\n\n' +
+    '> `Menggunakan link channel dari pesan yang di-reply`\n> .followch'
+followch.owner = true
+followch.typing = true

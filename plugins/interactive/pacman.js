@@ -12,12 +12,9 @@
 // ® Powered By Zapo-js
 // plugins/game/pacman.js
 
-export default {
-    command: 'pacman',
-    alias: ['pac', 'pacmangame'],
-    category: 'interactive',
-    description: '👻 Main game Pacman klasik langsung di chat',
-    execute: async (m, { sock }) => {
+import { sendRichHtml } from '../../lib/richmessage.js'
+
+export default async function pacman(m, { conn, args, text, command }) {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -826,41 +823,19 @@ rafId=requestAnimationFrame(loop);
         const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • PACMAN"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
-            });
+            await sendRichHtml(conn, targetChat, null, {
+        title: 'LUNARIELLE • PACMAN',
+        responseData,
+        base64Data
+      });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Pacman: ${err?.message || err}`
             });
         }
     }
-};
+
+pacman.command = 'pacman'
+pacman.alias = ['pac', 'pacmangame']
+pacman.category = 'interactive'
+pacman.description = "👻 Main game Pacman klasik langsung di chat"

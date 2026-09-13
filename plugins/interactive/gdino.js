@@ -12,12 +12,9 @@
 // ® Powered By Zapo-js
 // plugins/game/gdino.js
 
-export default {
-    command: 'gdino',
-    alias: ['dino', 'dinorun'],
-    category: 'interactive',
-    description: '🦖 Main game Dino Runner klasik ala Chrome Offline',
-    execute: async (m, { sock }) => {
+import { sendRichHtml } from '../../lib/richmessage.js'
+
+export default async function gdino(m, { conn, args, text, command }) {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -601,41 +598,19 @@ requestAnimationFrame(loop);
         const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • DINO RUNNER"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
-            });
+            await sendRichHtml(conn, targetChat, null, {
+        title: 'LUNARIELLE • DINO RUNNER',
+        responseData,
+        base64Data
+      });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Dino Runner: ${err?.message || err}`
             });
         }
     }
-};
+
+gdino.command = 'gdino'
+gdino.alias = ['dino', 'dinorun']
+gdino.category = 'interactive'
+gdino.description = "🦖 Main game Dino Runner klasik ala Chrome Offline"

@@ -12,12 +12,9 @@
 // ® Powered By Zapo-js
 // plugins/game/flappy.js
 
-export default {
-    command: 'flappy',
-    alias: ['flappybird', 'burung'],
-    category: 'interactive',
-    description: '🐤 Main game Flappy Bird langsung di chat',
-    execute: async (m, { sock }) => {
+import { sendRichHtml } from '../../lib/richmessage.js'
+
+export default async function flappy(m, { conn, args, text, command }) {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -589,41 +586,19 @@ requestAnimationFrame(loop);
         const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • FLAPPY BIRD"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
-            });
+            await sendRichHtml(conn, targetChat, null, {
+        title: 'LUNARIELLE • FLAPPY BIRD',
+        responseData,
+        base64Data
+      });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Flappy Bird: ${err?.message || err}`
             });
         }
     }
-};
+
+flappy.command = 'flappy'
+flappy.alias = ['flappybird', 'burung']
+flappy.category = 'interactive'
+flappy.description = "🐤 Main game Flappy Bird langsung di chat"

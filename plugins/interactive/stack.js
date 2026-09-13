@@ -10,14 +10,16 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/bot/stack.js
+// plugins/interactive/stack.js
+
+import { sendRichHtml } from '../../lib/richmessage.js'
 
 export default {
     command: 'stack',
     alias: ['tower', 'stacktower'],
     category: 'interactive',
     description: '🏗️ Mainkan Stack Tower - susun blok setinggi mungkin!',
-    execute: async (m, { sock }) => {
+    execute: async (m, { conn }) => {
         const targetChat = m.chat;
 
         const htmlPayload = `<style>
@@ -222,7 +224,7 @@ canvas { width: 100%; height: auto; background: #0a0c16; border: 1px solid rgba(
     const prev = stack[stack.length - 1];
     const newHue = (hueBase + stack.length * 9) % 360;
     const startX = direction > 0 ? 0 : CANVAS_WIDTH - prev.w;
-    
+
     currentBlock = {
       x: startX,
       y: prev.y - BLOCK_HEIGHT,
@@ -330,7 +332,7 @@ canvas { width: 100%; height: auto; background: #0a0c16; border: 1px solid rgba(
       flash = 0.3;
 
       createBurst(currentBlock.x + currentBlock.w / 2, currentBlock.y + BLOCK_HEIGHT / 2, 20, currentBlock.colorHue);
-      
+
       const comboText = combo > 1 ? ('PERFECT ×' + combo + '!') : 'PERFECT!';
       addFloatingText(comboText, currentBlock.x + currentBlock.w / 2, currentBlock.y - 10, '#00f0ff');
 
@@ -757,51 +759,14 @@ canvas { width: 100%; height: auto; background: #0a0c16; border: 1px solid rgba(
 })();
 </script>`;
 
-        const responseData = {
-            response_id: "stack-" + Date.now(),
-            sections: [
-                {
-                    view_model: {
-                        primitive: {
-                            __typename: "GenAIaeacdsnwHtmlPrimitive",
-                            payload: htmlPayload,
-                            trusted_sources: ["hirara.dev"]
-                        },
-                        __typename: "GenAISingleLayoutViewModel"
-                    }
-                }
-            ]
-        };
-
-        const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
-
-        await sock.message.send(targetChat, {
-            botForwardedMessage: {
-                message: {
-                    richResponseMessage: {
-                        messageType: 1,
-                        submessages: [
-                            {
-                                messageType: 2,
-                                messageText: "🏗️ Stack Tower Game"
-                            }
-                        ],
-                        unifiedResponse: {
-                            data: base64Data
-                        },
-                        contextInfo: {
-                            forwardingScore: 1,
-                            isForwarded: true,
-                            forwardedAiBotMessageInfo: {
-                                botJid: "867051314767696@bot"
-                            },
-                            forwardOrigin: 4
-                        }
-                    }
-                }
-            }
-        }, {
-            additionalAttributes: { "type": "text" }
-        });
+        try {
+            await sendRichHtml(conn, targetChat, htmlPayload, {
+                title: '🏗️ Stack Tower Game'
+            });
+        } catch (err) {
+            await conn.sendMessage(targetChat, {
+                text: `❌ Gagal mengirim Stack Tower: ${err?.message || err}`
+            });
+        }
     }
 };

@@ -10,7 +10,7 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/group/antimention.js
+// plugins/group/antiMention.js
 
 import { getGroupSetting, setGroupSetting } from '../../db/groupSettings.js'
 import { refreshBotAdminStatus } from '../../db/groupCache.js'
@@ -19,11 +19,11 @@ export default {
   command: 'antimention',
   category: 'group',
   description: 'Aktif/nonaktifkan penghapusan otomatis pesan tag-all/mention banyak member sekaligus (khusus admin grup).',
-  groupOnly: true,
-  adminOnly: true,
+  group: true,
+  admin: true,
   typing: true,
 
-  async execute(m, { sock, args }) {
+  async execute(m, { conn, args }) {
     const sub = (args[0] || '').toLowerCase()
 
     if (!sub) {
@@ -41,7 +41,7 @@ export default {
     const enable = sub === 'on'
 
     if (enable) {
-      const isBotAdminLive = await refreshBotAdminStatus(m.chat, sock)
+      const isBotAdminLive = await refreshBotAdminStatus(m.chat, conn)
 
       if (!isBotAdminLive) {
         return m.reply('❌ Bot harus dijadikan admin dulu supaya bisa menghapus pesan mention/tag-all secara otomatis.')

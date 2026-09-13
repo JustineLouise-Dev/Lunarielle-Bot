@@ -28,8 +28,8 @@ export default {
   command: 'setleft',
   category: 'group',
   description: 'Mengatur teks perpisahan otomatis untuk member yang keluar/dikeluarkan (mendukung $subject, $user, $desc, $members).',
-  groupOnly: true,
-  adminOnly: true,
+  group: true,
+  admin: true,
   typing: true,
 
   async execute(m, { args }) {

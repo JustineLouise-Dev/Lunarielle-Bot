@@ -9,12 +9,10 @@
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
 // © 2026 Justine Louise. All Rights Reserved.
-// ® Powered By Zapo-js
 // menu.js
-import zapoPkg from 'zapo-js/package.json' with { type: 'json' }
-import { config } from '../../settings.js'
 
-const zapoVersion = zapoPkg.version
+import { config } from '../../settings.js'
+import { sendListMenu, sendInteractiveMenu } from '../../lib/wrapper.js'
 
 export const CATEGORY_ICON = {
     channel: '📢',
@@ -49,7 +47,9 @@ export function uniquePlugins(plugins) {
     const seen = new Set()
     const unique = []
 
-    for (const plugin of plugins.values()) {
+    const iterable = plugins instanceof Map ? plugins.values() : plugins
+
+    for (const plugin of iterable) {
         if (seen.has(plugin)) continue
         seen.add(plugin)
         unique.push(plugin)
@@ -63,6 +63,7 @@ export function groupByCategory(pluginList) {
 
     for (const plugin of pluginList) {
         if (plugin.hidden) continue
+        if (!plugin.command) continue
 
         const category = plugin.category || 'root'
         if (!groups.has(category)) groups.set(category, [])
@@ -70,7 +71,7 @@ export function groupByCategory(pluginList) {
     }
 
     for (const list of groups.values()) {
-        list.sort((a, b) => a.command.localeCompare(b.command))
+        list.sort((a, b) => String(a.command).localeCompare(String(b.command)))
     }
 
     return groups
@@ -84,17 +85,24 @@ function sortedCategoryKeys(groups) {
     })
 }
 
+function commandName(plugin) {
+    return Array.isArray(plugin.command) ? plugin.command[0] : String(plugin.command)
+}
+
 function buildHeader(m) {
-    const prefix = config.noprefix ? 'no prefix' : config.prefixes.join(' ')
+    const prefixes = Array.isArray(config.prefixes) && config.prefixes.length
+        ? config.prefixes
+        : [config.prefix || '.']
+    const prefix = config.noprefix ? 'no prefix' : prefixes.join(' ')
 
     return [
         `╭───「 *${config.botName}* 」───╮`,
-        `│ ✦ Halo, *@${m.sender.split('@')[0]}* 👋`,
+        `│ ✦ Halo, *${m.pushName || 'Kak'}* 👋`,
         `│`,
-        `│ 👑 Owner   : ${config.ownerName}`,
+        `│ 👑 Owner   : ${config.ownerName || '-'}`,
         `│ ⚙️ Prefix  : ${prefix}`,
         `│ 🖥️ Runtime : ${getRuntime()}`,
-        `│ 📦 Library : zapo-js v${zapoVersion}`,
+        `│ 📦 Library : Baileys`,
         `╰──────────────────────╯`
     ].join('\n')
 }
@@ -126,7 +134,7 @@ export function buildAllMenuText(groups, usedPrefix) {
         lines.push(`  ${categoryIcon(category)} *${formatCategoryName(category)}* ┆ ${items.length} fitur`)
 
         for (const plugin of items) {
-            lines.push(`     ▸ ${usedPrefix}${plugin.command}`)
+            lines.push(`     ▸ ${usedPrefix}${commandName(plugin)}`)
         }
 
         lines.push('')
@@ -148,7 +156,7 @@ function buildCategoryMenuText(groups, categoryKey, usedPrefix) {
     ]
 
     for (const plugin of items) {
-        lines.push(`  ▸ ${usedPrefix}${plugin.command}`)
+        lines.push(`  ▸ ${usedPrefix}${commandName(plugin)}`)
     }
 
     lines.push('')
@@ -157,82 +165,33 @@ function buildCategoryMenuText(groups, categoryKey, usedPrefix) {
     return lines.join('\n')
 }
 
-export function buildCategorySections(groups, usedPrefix) {
+export function buildMenuListSections(groups, usedPrefix, command) {
     const totalFitur = [...groups.values()].reduce((a, b) => a + b.length, 0)
 
     const categoryRows = sortedCategoryKeys(groups).map((category) => ({
-        header: '',
         title: `${categoryIcon(category)} ${formatCategoryName(category)}`,
         description: `${groups.get(category).length} fitur`,
-        id: `${usedPrefix}menu ${category}`
+        rowId: `${usedPrefix}${command} ${category}`
     }))
 
     const sections = [
         {
             title: '✨ Semua Fitur',
-            highlight_label: '',
             rows: [
                 {
-                    header: '',
                     title: '📚 All Menu',
                     description: `Tampilkan seluruh ${totalFitur} fitur sekaligus`,
-                    id: `${usedPrefix}menu all`
+                    rowId: `${usedPrefix}${command} all`
                 }
             ]
         },
         {
             title: '🗂️ Kategori Fitur',
-            highlight_label: '',
             rows: categoryRows
         }
     ]
 
-    if (config.channelUrl) {
-        sections.push({
-            title: '🔗 Lainnya',
-            highlight_label: '',
-            rows: [
-                {
-                    header: '',
-                    title: '📢 Channel Resmi',
-                    description: 'Update fitur & pengumuman terbaru',
-                    id: `${usedPrefix}channel`
-                }
-            ]
-        })
-    }
-
     return sections
-}
-
-export function buildCategoryListButton(groups, usedPrefix, title = '📋 Lihat Kategori') {
-    return {
-        name: 'single_select',
-        buttonParamsJson: JSON.stringify({
-            title,
-            sections: buildCategorySections(groups, usedPrefix)
-        })
-    }
-}
-
-export function buildMenuButtons(groups, usedPrefix) {
-    return [
-        buildCategoryListButton(groups, usedPrefix, '📋 View List'),
-        {
-            name: 'quick_reply',
-            buttonParamsJson: JSON.stringify({
-                display_text: '📢 Channel',
-                id: `${usedPrefix}channel`
-            })
-        },
-        {
-            name: 'quick_reply',
-            buttonParamsJson: JSON.stringify({
-                display_text: '👤 Creator',
-                id: `${usedPrefix}creator`
-            })
-        }
-    ]
 }
 
 export default {
@@ -249,7 +208,7 @@ export default {
     help: '`[kategori|all]`',
     typing: true,
 
-    async execute(m, { plugins }) {
+    async execute(m, { conn, plugins }) {
         const pluginList = uniquePlugins(plugins)
         const groups = groupByCategory(pluginList)
         const arg = (m.args[0] || '').toLowerCase()
@@ -271,25 +230,43 @@ export default {
 
             body = buildCategoryMenuText(groups, matchedKey, usedPrefix)
         }
+
         const hasil = header + '\n\n' + body
 
-        return m.reply({
-            interactiveMessage: {
-                header: { title: `✦ ${config.botName} ✦`, hasMediaAttachment: false },
-                body: { text: hasil },
-                footer: { text: `✦ Powered by ${config.botName} ✦` },
-                nativeFlowMessage: {
-                    buttons: buildMenuButtons(groups, usedPrefix),
-                    messageVersion: 1
-                },
-                contextInfo: {
-                    stanzaId: m.id,
-                    participant: m.sender,
-                    remoteJid: m.chat,
-                    quotedMessage: m.raw?.message,
-                    mentionedJid: [m.sender]
-                }
+        try {
+            const extraButtons = []
+
+            if (config.channelUrl) {
+                extraButtons.push({ type: 'reply', displayText: '📢 Channel', id: `${usedPrefix}channel` })
             }
-        })
+            extraButtons.push({ type: 'reply', displayText: '👤 Developer', id: `${usedPrefix}creator` })
+
+            return await sendInteractiveMenu(conn, m.chat, {
+                title: `✦ ${config.botName} ✦`,
+                text: hasil,
+                footer: `✦ Powered by ${config.botName} ✦`,
+                buttons: [
+                    {
+                        type: 'list',
+                        displayText: '📋 Lihat Kategori',
+                        sections: buildMenuListSections(groups, usedPrefix, m.command)
+                    },
+                    ...extraButtons
+                ]
+            }, { quoted: m })
+        } catch (interactiveError) {
+            try {
+                return await sendListMenu(conn, m.chat, {
+                    title: `✦ ${config.botName} ✦`,
+                    text: hasil,
+                    footer: `✦ Powered by ${config.botName} ✦`,
+                    buttonText: '📋 Lihat Kategori',
+                    sections: buildMenuListSections(groups, usedPrefix, m.command)
+                }, { quoted: m })
+            } catch (listError) {
+
+                return m.reply(hasil)
+            }
+        }
     }
 }

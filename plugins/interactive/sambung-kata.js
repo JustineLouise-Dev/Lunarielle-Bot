@@ -12,12 +12,9 @@
 // ® Powered By Zapo-js
 // plugins/interactive/sambungkata.js
 
-export default {
-    command: 'sambungkata',
-    alias: ['sambung', 'wordchain'],
-    category: 'interactive',
-    description: '🔤 Main Sambung Kata multiplayer bareng teman (realtime)',
-    execute: async (m, { sock }) => {
+import { sendRichHtml } from '../../lib/richmessage.js'
+
+export default async function sambungkata(m, { conn, args, text, command }) {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -889,10 +886,29 @@ export default {
   let reconnectTimer = null;
   let intentionalClose = false;
 
+  /* Stable per-tab identity so a dropped-then-reconnected socket rejoins as
+     the SAME player on the server (keeps host status / turn slot instead of
+     silently becoming an unrecognized new player after a round ends). */
+  function getClientId(){
+    try{
+      let id = sessionStorage.getItem("lunarielle_sk_clientId");
+      if (!id){
+        id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+        sessionStorage.setItem("lunarielle_sk_clientId", id);
+      }
+      return id;
+    }catch{
+      if (!getClientId._fallback){
+        getClientId._fallback = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      }
+      return getClientId._fallback;
+    }
+  }
+
   function wsUrlFor(code, name){
     const httpBase = WORKER_URL.replace(/\\/$/, "");
     const wsBase = httpBase.replace(/^http/, "ws");
-    return \`\${wsBase}/ws/\${encodeURIComponent(code)}?name=\${encodeURIComponent(name)}\`;
+    return \`\${wsBase}/ws/\${encodeURIComponent(code)}?name=\${encodeURIComponent(name)}&clientId=\${encodeURIComponent(getClientId())}\`;
   }
 
   function initials(name){
@@ -939,12 +955,40 @@ export default {
     joinError.textContent = "";
   });
 
+  // Normalisasi kode undangan: menerima kode mentah, "Kode: ABCDE",
+  // atau teks/URL undangan yang mengandung kode 5 karakter.
+  function normalizeInviteCode(value){
+    const raw = String(value || "").toUpperCase().trim();
+    const compact = raw.replace(/[^A-Z0-9]/g, "");
+    if (/^[A-Z0-9]{5}$/.test(compact)) return compact;
+
+    // Jika pengguna paste teks lengkap, ambil kandidat kode room 5 karakter.
+    const match = raw.match(/[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}/);
+    return match ? match[0] : compact.slice(0, 5);
+  }
+
   codeInput.addEventListener("input", () => {
     codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);
   });
 
+  // WhatsApp/WebView kadang meneruskan paste sebagai teks panjang.
+  // Tangani paste sebelum maxlength=5 memotong isi sehingga kode undangan
+  // tetap bisa diekstrak.
+  codeInput.addEventListener("paste", (e) => {
+    try {
+      const text = e.clipboardData?.getData("text") || "";
+      const code = normalizeInviteCode(text);
+      if (code) {
+        e.preventDefault();
+        codeInput.value = code;
+        codeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    } catch {}
+  });
+
   $("btnDoJoin").addEventListener("click", async () => {
-    const code = codeInput.value.trim();
+    const code = normalizeInviteCode(codeInput.value);
+    codeInput.value = code;
     const name = (nameInput.value || "Pemain").trim() || "Pemain";
     joinError.textContent = "";
     if (code.length < 4){
@@ -969,8 +1013,12 @@ export default {
   nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && joinPanel.classList.contains("open")) $("btnDoJoin").click(); });
 
   /* ---------------- WebSocket connection ---------------- */
+  let myName = null;
+  let pendingSend = null;
+
   function connectToRoom(code, name, isCreator){
     roomCode = code.toUpperCase();
+    myName = name;
     clearTimeout(reconnectTimer);
     reconnectAttempts = 0;
     intentionalClose = false;
@@ -983,6 +1031,11 @@ export default {
     ws.addEventListener("open", () => {
       reconnectAttempts = 0;
       SFX.join();
+      if (pendingSend){
+        const toSend = pendingSend;
+        pendingSend = null;
+        try{ ws.send(JSON.stringify(toSend)); }catch{}
+      }
     });
 
     ws.addEventListener("message", (evt) => {
@@ -992,9 +1045,11 @@ export default {
     });
 
     ws.addEventListener("close", (evt) => {
-      if (lastPhase !== "ended" && !intentionalClose){
-        SFX.disconnected();
-        showToast("Koneksi terputus, menyambungkan ulang...", "bad");
+      if (!intentionalClose){
+        if (lastPhase !== "ended"){
+          SFX.disconnected();
+          showToast("Koneksi terputus, menyambungkan ulang...", "bad");
+        }
         scheduleReconnect(name);
       }
     });
@@ -1007,6 +1062,7 @@ export default {
   function scheduleReconnect(name){
     if (reconnectAttempts >= 5) {
       showToast("Gagal tersambung kembali. Coba muat ulang.", "bad");
+      pendingSend = null;
       return;
     }
     reconnectAttempts++;
@@ -1015,6 +1071,30 @@ export default {
     reconnectTimer = setTimeout(() => {
       if (!intentionalClose) openSocket(name);
     }, delay);
+  }
+
+  /* Sends a message, reconnecting first if the socket has died (e.g. right
+     after a round ends). Keeps "Main Lagi" / "Mulai Permainan" working
+     without forcing the user back to the menu to rejoin. */
+  function sendMessage(payload){
+    if (ws && ws.readyState === WebSocket.OPEN){
+      ws.send(JSON.stringify(payload));
+      return;
+    }
+    if (!roomCode || !myName){
+      showToast("Sesi room tidak ditemukan, kembali ke menu...", "bad");
+      leaveRoom();
+      return;
+    }
+    pendingSend = payload;
+    showToast("Menyambungkan ulang...", "ok");
+    intentionalClose = false;
+    clearTimeout(reconnectTimer);
+    reconnectAttempts = 0;
+    if (!ws || ws.readyState === WebSocket.CLOSED){
+      openSocket(myName);
+    }
+    // else: CONNECTING/CLOSING — the queued pendingSend will flush on the next "open".
   }
 
   function handleServerMessage(msg){
@@ -1035,7 +1115,10 @@ export default {
         handleGameOver(msg);
         break;
       case "error":
-        showToast(msg.message, "bad");
+        if (joinPanel.classList.contains("open")) {
+          joinError.textContent = msg.message || "Kode room tidak ditemukan atau sudah tidak aktif.";
+        }
+        showToast(msg.message || "Kode room tidak ditemukan atau sudah tidak aktif.", "bad");
         SFX.wrong();
         break;
     }
@@ -1084,7 +1167,7 @@ export default {
   $("btnStartGame").addEventListener("click", () => {
     SFX.click();
     SFX.hostStart();
-    ws && ws.send(JSON.stringify({ type: "start_game" }));
+    sendMessage({ type: "start_game" });
   });
   $("btnCopyCode").addEventListener("click", () => {
     navigator.clipboard && navigator.clipboard.writeText(roomCode).then(() => {
@@ -1372,7 +1455,7 @@ export default {
   $("btnRematch").addEventListener("click", () => {
     SFX.click();
     SFX.rematch();
-    ws && ws.send(JSON.stringify({ type:"rematch" }));
+    sendMessage({ type:"rematch" });
   });
   $("btnBackToMenu").addEventListener("click", () => {
     leaveRoom();
@@ -1397,7 +1480,7 @@ export default {
 `;
 
         if (html.includes('YOUR-SUBDOMAIN')) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: '⚠️ Sambung Kata belum dikonfigurasi. Buka plugins/interactive/sambungkata.js, cari baris "const WORKER_URL" di dalam variabel html, lalu ganti dengan URL Cloudflare Worker kamu.'
             });
             return;
@@ -1422,41 +1505,19 @@ export default {
         const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • SAMBUNG KATA"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
+            await sendRichHtml(conn, targetChat, null, {
+                title: 'LUNARIELLE • SAMBUNG KATA',
+                responseData,
+                base64Data
             });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Sambung Kata: ${err?.message || err}`
             });
         }
     }
-};
+
+sambungkata.command = 'sambungkata'
+sambungkata.alias = ['sambung', 'wordchain']
+sambungkata.category = 'interactive'
+sambungkata.description = "🔤 Main Sambung Kata multiplayer bareng teman (realtime)"

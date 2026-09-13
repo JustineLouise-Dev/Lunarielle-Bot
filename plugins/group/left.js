@@ -19,8 +19,8 @@ export default {
   command: 'left',
   category: 'group',
   description: 'Aktif/nonaktifkan pesan otomatis saat member keluar/dikeluarkan dari grup (khusus admin grup).',
-  groupOnly: true,
-  adminOnly: true,
+  group: true,
+  admin: true,
   typing: true,
 
   async execute(m, { args }) {

@@ -19,8 +19,8 @@ export default {
   command: 'welcome',
   category: 'group',
   description: 'Aktif/nonaktifkan pesan sambutan otomatis untuk member baru yang join grup (khusus admin grup).',
-  groupOnly: true,
-  adminOnly: true,
+  group: true,
+  admin: true,
   typing: true,
 
   async execute(m, { args }) {

@@ -19,42 +19,37 @@ const STICKER_PACKNAME = 'Lunarielle'
 const STICKER_AUTHOR = 'JustineLouise'
 
 export default {
-  command: 'brat',
-  alias: [],
-  category: 'tools',
-  description: 'Membuat stiker bergaya "brat" (album Charli XCX) dari teks.',
-  help: '`<teks>`',
-  typing: true,
-  wait: true,
+    command: 'brat',
+    alias: [],
+    category: 'tools',
+    description: 'Membuat stiker bergaya "brat" (album Charli XCX) dari teks.',
+    help: '`<teks>`',
+    typing: true,
 
-  async execute(m, { sock, args }) {
-    const text = args.join(' ').trim()
-    if (!text) {
-      return m.reply('⚠️ Sertakan teksnya ya.\n\nContoh: `.brat aku lagi brat summer`')
+    async execute(m, { args }) {
+        const text = args.join(' ').trim()
+        if (!text) {
+            return m.reply('⚠️ Sertakan teksnya ya.\n\nContoh: `.brat aku lagi brat summer`')
+        }
+
+        try {
+            const imageBuffer = await generateBratImage(text)
+
+            const stickerBuffer = await createSticker({
+                buffer: imageBuffer,
+                isAnimated: false,
+                sourceExt: 'png',
+                packname: STICKER_PACKNAME,
+                author: STICKER_AUTHOR
+            })
+
+            return m.reply({ sticker: stickerBuffer })
+        } catch (e) {
+            console.error('[BRAT ERROR] Gagal membuat stiker brat:', e)
+            const errText = e?.message === 'Teks terlalu panjang. Maksimal 300 karakter.'
+                ? '⚠️ Teksnya kepanjangan. Maksimal 300 karakter ya.'
+                : '⚠️ Gagal membuat stiker brat. Coba lagi.'
+            return m.reply(errText)
+        }
     }
-
-    try {
-      const imageBuffer = await generateBratImage(text)
-
-      const stickerBuffer = await createSticker({
-        buffer: imageBuffer,
-        isAnimated: false,
-        sourceExt: 'png',
-        packname: STICKER_PACKNAME,
-        author: STICKER_AUTHOR
-      })
-
-      return sock.message.send(
-        m.chat,
-        { type: 'sticker', media: stickerBuffer, mimetype: 'image/webp' },
-        { quote: m.raw }
-      )
-    } catch (e) {
-      console.error('[BRAT ERROR] Gagal membuat stiker brat:', e)
-      const errText = e?.message === 'Teks terlalu panjang. Maksimal 300 karakter.'
-        ? '⚠️ Teksnya kepanjangan. Maksimal 300 karakter ya.'
-        : '⚠️ Gagal membuat stiker brat. Coba lagi.'
-      return m.reply(errText)
-    }
-  }
 }

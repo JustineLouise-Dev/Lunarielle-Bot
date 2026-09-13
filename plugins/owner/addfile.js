@@ -15,7 +15,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { downloadMediaMessage } from 'zapo-js'
+import { downloadMediaMessage } from 'baileys'
 import { reviveBase64Fields } from '../../lib/utils.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -71,7 +71,7 @@ export default {
   help: '`(reply)`',
   onlyOwner: true,
 
-  async execute(m, { args }) {
+  async execute(m, { args, sock }) {
     const q = m.quoted
     if (!q) {
       return m.reply('Balas (reply) media atau file yang ingin disimpan!')
@@ -132,13 +132,17 @@ Gunakan nama lain atau hapus file lama terlebih dahulu.`
         return m.reply(caption)
       }
 
-      const stream = await downloadMediaMessage(mediaObj)
-
-      const chunks = []
-      for await (const chunk of stream) {
-        chunks.push(chunk)
+      const waMessageForDownload = {
+        key: q.key ?? { remoteJid: m.chat, id: q.id, fromMe: q.fromMe },
+        message: mediaObj
       }
-      const buffer = Buffer.concat(chunks)
+
+      const buffer = await downloadMediaMessage(
+        waMessageForDownload,
+        'buffer',
+        {},
+        { logger: sock?.logger, reuploadRequest: sock?.updateMediaMessage }
+      )
 
       fs.writeFileSync(fullPath, buffer)
 

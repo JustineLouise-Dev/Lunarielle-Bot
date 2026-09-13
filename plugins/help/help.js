@@ -9,24 +9,7 @@
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
 // © 2026 Justine Louise. All Rights Reserved.
-// ® Powered By Zapo-js
-// plugins/bot/help.js
-
-import { getRandomThumb } from '../../db/thumbnails.js'
-
-const HELP_URL = 'https://github.com/bangsulbotz/zapo-js'
-
-function formatAliases(plugin) {
-  const rawAliases = plugin.alias ?? plugin.aliases
-  const aliases = Array.isArray(rawAliases)
-    ? rawAliases
-    : rawAliases
-      ? [rawAliases]
-      : []
-
-  if (!aliases?.length) return '-'
-  return aliases.map(alias => `\`${alias}\``).join(', ')
-}
+// plugins/help/help.js
 
 export default {
   command: 'help',
@@ -39,11 +22,11 @@ export default {
 > .help <command/alias>`,
   help: '`<command/alias>`',
 
-  async execute(m, { plugins, sock }) {
+  async execute(m, { plugins }) {
     const requested = m.args?.[0]?.toLowerCase()
 
     if (!requested) {
-      return m.reply(`Gunakan: ${m.prefix}${m.command} <command atau alias>\nContoh: ${m.prefix}${m.command} stele`)
+      return m.reply(`Gunakan: ${m.prefix}${m.command} <command atau alias>\nContoh: ${m.prefix}${m.command} ping`)
     }
 
     const plugin = plugins.get(requested)
@@ -51,32 +34,28 @@ export default {
       return m.reply(`Fitur \`${requested}\` tidak ditemukan.\nGunakan ${m.prefix}menu untuk melihat daftar fitur.`)
     }
 
-    const aliases = formatAliases(plugin)
-    const source = plugin.source || 'Tidak diketahui'
+    const rawAliases = plugin.alias
+    const aliases = Array.isArray(rawAliases)
+      ? rawAliases
+      : rawAliases
+        ? [rawAliases]
+        : []
+
+    const aliasText = aliases.length
+      ? aliases.map(alias => `\`${alias}\``).join(', ')
+      : '-'
+
+    const source = plugin.__file || 'Tidak diketahui'
     const description = plugin.description || 'Tidak ada deskripsi.'
+    const commandName = Array.isArray(plugin.command) ? plugin.command[0] : plugin.command
 
     const info =
       `*Informasi Fitur*\n\n` +
-      `*Command:* \`${m.prefix}${plugin.command}\`\n` +
-      `*Alias:* ${aliases}\n` +
+      `*Command:* \`${m.prefix}${commandName}\`\n` +
+      `*Alias:* ${aliasText}\n` +
       `*Deskripsi:*\n${description}\n` +
       `*Directory:* \`${source}\``
 
-    try {
-      const opts = {
-        url: HELP_URL,
-        title: `Fitur ${m.prefix}${plugin.command}`,
-        body: 'Detail informasi command & alias',
-        text: info,
-        thumbnail: 'random',
-        quote: m
-      }
-
-      if (getRandomThumb('favicon')) opts.favicon = 'random'
-
-      return await sock.sendThumbnail(m.chat, opts)
-    } catch {
-      return m.reply(info)
-    }
+    return m.reply(info)
   }
 }

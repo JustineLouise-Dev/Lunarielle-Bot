@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Justine Louise & MioDev.
-// Created by Justine Louise & MioDev.
+// Copyright (c) 2026 Justine Louise.
+// Created by Justine Louise.
 //
 // This software is provided for personal and educational use only.
 // Commercial use, resale, or distribution for profit is strictly prohibited
@@ -8,9 +8,8 @@
 // Please respect the developer's work.
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
-// © 2026 Justine Louise & MioDev. All Rights Reserved.
+// © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-//
 // settings.js
 
 import fs from 'fs'
@@ -36,8 +35,6 @@ function loadConfigFile() {
 
 export const settings = loadConfigFile()
 export const config = settings
-
-export const OFFICIAL_CHANNEL_URL = 'https://whatsapp.com/channel/0029VbDwkes84OmBLbb1FY1M'
 
 const LOCKED_KEYS = ['channelUrl']
 

@@ -10,14 +10,16 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/game/snake.js
+// plugins/interactive/snake.js
+
+import { sendRichHtml } from '../../lib/richmessage.js'
 
 export default {
     command: 'snake',
     alias: ['ular', 'nokia'],
     category: 'interactive',
     description: '🐍 Main game Snake klasik ala Nokia 3310',
-    execute: async (m, { sock }) => {
+    execute: async (m, { conn }) => {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -519,58 +521,12 @@ requestAnimationFrame(loop);
 })();
 </script>`;
 
-        const responseData = {
-            response_id: "lunarielle-snake-" + Date.now(),
-            sections: [
-                {
-                    view_model: {
-                        primitive: {
-                            __typename: "GenAIaeacdsnwHtmlPrimitive",
-                            payload: html,
-                            trusted_sources: []
-                        },
-                        __typename: "GenAISingleLayoutViewModel"
-                    }
-                }
-            ]
-        };
-
-        const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
-
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • SNAKE"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
+            await sendRichHtml(conn, targetChat, html, {
+                title: 'LUNARIELLE • SNAKE'
             });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Snake: ${err?.message || err}`
             });
         }

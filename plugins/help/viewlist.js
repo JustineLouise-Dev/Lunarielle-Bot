@@ -9,11 +9,11 @@
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
 // © 2026 Justine Louise. All Rights Reserved.
-// ® Powered By Zapo-js
 // plugins/help/viewlist.js
 
 import { config } from '../../settings.js'
-import { uniquePlugins, groupByCategory, buildCategoryListButton } from './menu.js'
+import { uniquePlugins, groupByCategory, buildMenuListSections } from './menu.js'
+import { sendListMenu, sendInteractiveMenu } from '../../lib/wrapper.js'
 
 export default {
     command: 'viewlist',
@@ -22,7 +22,7 @@ export default {
     description: 'Menampilkan pilihan kategori fitur bot untuk dijelajahi satu per satu.',
     typing: true,
 
-    async execute(m, { plugins }) {
+    async execute(m, { conn, plugins }) {
         const pluginList = uniquePlugins(plugins)
         const groups = groupByCategory(pluginList)
         const usedPrefix = m.prefix
@@ -39,24 +39,37 @@ export default {
             '💡 Tekan tombol *"Lihat Kategori"* di bawah untuk menjelajahi tiap kategori fitur. 👇'
         ].join('\n')
 
-        const buttons = [buildCategoryListButton(groups, usedPrefix, '📋 Lihat Kategori')]
+        const listSections = buildMenuListSections(groups, usedPrefix, 'menu')
 
-        return m.reply({
-            interactiveMessage: {
-                header: { title: `❍ ${config.botName} ❍`, hasMediaAttachment: false },
-                body: { text: body },
-                footer: { text: `✦ Powered by ${config.botName} ✦` },
-                nativeFlowMessage: {
-                    buttons,
-                    messageVersion: 1
-                },
-                contextInfo: {
-                    stanzaId: m.id,
-                    participant: m.sender,
-                    remoteJid: m.chat,
-                    quotedMessage: m.raw?.message
-                }
+        try {
+            const extraButtons = []
+
+            if (config.channelUrl) {
+                extraButtons.push({ type: 'reply', displayText: '📢 Channel', id: `${usedPrefix}channel` })
             }
-        })
+            extraButtons.push({ type: 'reply', displayText: '👤 Developer', id: `${usedPrefix}creator` })
+
+            return await sendInteractiveMenu(conn, m.chat, {
+                title: `❍ ${config.botName} ❍`,
+                text: body,
+                footer: `✦ Powered by ${config.botName} ✦`,
+                buttons: [
+                    { type: 'list', displayText: '📋 Lihat Kategori', sections: listSections },
+                    ...extraButtons
+                ]
+            }, { quoted: m })
+        } catch (interactiveError) {
+            try {
+                return await sendListMenu(conn, m.chat, {
+                    title: `❍ ${config.botName} ❍`,
+                    text: body,
+                    footer: `✦ Powered by ${config.botName} ✦`,
+                    buttonText: '📋 Lihat Kategori',
+                    sections: listSections
+                }, { quoted: m })
+            } catch (listError) {
+                return m.reply(body)
+            }
+        }
     }
 }

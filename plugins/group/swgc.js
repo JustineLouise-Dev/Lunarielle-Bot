@@ -17,14 +17,14 @@ export default {
   category: 'group',
   description: 'Kirim pesan sebagai status grup.\n\n*Format:* .swgc [teks|emoji]\n*Wajib:* Reply pesan',
   help: '[teks|emoji] (reply pesan)',
-  onlyAdmin: true,
-  onlyGroup: true,
+  admin: true,
+  group: true,
 
-  async execute(m, { sock, args }) {
+  async execute(m, { conn, args }) {
     if (!m.quoted) throw 'Reply pesan yang mau dijadikan status grup!'
-    if (!m.quoted.full) throw 'Data pesan tidak ditemukan!'
+    if (!m.quoted.message) throw 'Data pesan tidak ditemukan!'
 
-    const full = m.quoted.full
+    const full = m.quoted.message
     const msgType = Object.keys(full).find(k => k.endsWith('Message') && k !== 'messageContextInfo')
     if (!msgType) throw 'Tipe pesan tidak dikenali!'
 
@@ -43,13 +43,18 @@ export default {
       }
     }
 
-    await sock.message.send(m.chat, {
+    await conn.relayMessage(m.chat, {
       groupStatusMessageV2: { message: { [msgType]: raw } }
     }, {
-      customNodes: [{ tag: 'meta', attrs: { is_group_status: 'true' } }],
+      additionalNodes: [{ tag: 'meta', attrs: { is_group_status: 'true' } }],
       additionalAttributes: { type: 'text' }
     })
 
-    await sock.sendReact(m.chat, '✅', m.id)
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '✅',
+        key: { remoteJid: m.chat, id: m.id, fromMe: m.fromMe, participant: m.isGroup ? m.sender : undefined }
+      }
+    })
   }
 }

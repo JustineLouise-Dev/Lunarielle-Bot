@@ -10,7 +10,9 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/bot/slot.js
+// plugins/interactive/slot.js
+
+import { sendRichHtml } from '../../lib/richmessage.js'
 
 const SLOT_HTML = `<style>
 
@@ -332,55 +334,17 @@ export default {
   help: 'Tanpa argumen, langsung main.',
   typing: true,
 
-  async execute(m, { sock }) {
+  async execute(m, { conn }) {
     try {
       const targetChat = m.chat;
 
-      const responseData = {
-        response_id: "slot-" + Date.now(),
-        sections: [{
-          view_model: {
-            primitive: {
-              __typename: "GenAIaeacdsnwHtmlPrimitive",
-              payload: SLOT_HTML,
-              trusted_sources: ["levvicode.dev"]
-            },
-            __typename: "GenAISingleLayoutViewModel"
-          }
-        }]
-      };
-
-      const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
-
-      await sock.message.send(targetChat, {
-        botForwardedMessage: {
-          message: {
-            richResponseMessage: {
-              messageType: 1,
-              submessages: [
-                {
-                  messageType: 2,
-                  messageText: "🎰 FRUIT BONANZA"
-                }
-              ],
-              unifiedResponse: {
-                data: base64Data
-              },
-              contextInfo: {
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardOrigin: 4
-              }
-            }
-          }
-        }
-      }, {
-        additionalAttributes: { "type": "text" }
+      await sendRichHtml(conn, targetChat, SLOT_HTML, {
+        title: '🎰 FRUIT BONANZA'
       });
 
     } catch (error) {
       console.error('[SLOT ERROR]', error);
-      await sock.message.send(m.chat, {
+      await conn.sendMessage(m.chat, {
         text: `❌ *Gagal memuat game slot!*\n\n${error?.message || 'Unknown error'}`
       });
     }

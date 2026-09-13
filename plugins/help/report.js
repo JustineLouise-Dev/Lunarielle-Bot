@@ -11,9 +11,6 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/MainMenu/report.js
-//
-// Perintah: .report <kategori> <isi laporan>
-// Melaporkan bug fitur, masalah bot, atau user ke owner lewat db/reportStore.js
 
 import { createReport, REPORT_CATEGORY_LABEL } from '../../db/reportStore.js'
 import { DIVIDER, header, footer } from '../../lib/messageStyle.js'

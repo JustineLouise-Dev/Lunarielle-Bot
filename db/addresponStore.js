@@ -11,182 +11,145 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // db/addresponStore.js
-//
-// Menyimpan data auto-respon custom milik owner (fitur .addrespon).
-// Metadata (trigger + daftar respon) disimpan di SQLite; isi media
-// (gambar/stiker/video/dokumen/audio) tetap ditulis sebagai file terpisah
-// di store/addrespon/<id>.<ext> supaya database tetap ringan.
 
-import Database from 'better-sqlite3'
-import path from 'path'
 import fs from 'fs'
-import crypto from 'crypto'
+import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORE_DIR = path.join(__dirname, '..', 'store')
-const MEDIA_DIR = path.join(STORE_DIR, 'addrespon')
-const dbPath = path.join(STORE_DIR, 'addrespon.db')
+const DATA_DIR = path.join(__dirname, 'data')
+const STATE_FILE = path.join(DATA_DIR, 'addresponState.json')
 
-if (!fs.existsSync(STORE_DIR)) fs.mkdirSync(STORE_DIR, { recursive: true })
-if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true })
-
-const db = new Database(dbPath)
-
-db.pragma('journal_mode = WAL')
-db.pragma('synchronous = NORMAL')
-db.pragma('wal_autocheckpoint = 1000')
-db.pragma('journal_size_limit = 67108864')
-db.pragma('cache_size = -8000')
-db.pragma('temp_store = MEMORY')
-db.pragma('mmap_size = 268435456')
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS addrespon_items (
-        id TEXT PRIMARY KEY,
-        trigger_key TEXT NOT NULL,
-        trigger_display TEXT NOT NULL,
-        type TEXT NOT NULL,
-        text TEXT,
-        media_file TEXT,
-        mimetype TEXT,
-        created_at INTEGER NOT NULL,
-        created_by TEXT
-    )
-`)
-db.exec(`CREATE INDEX IF NOT EXISTS idx_addrespon_trigger_key ON addrespon_items (trigger_key)`)
-
-const stmtInsert = db.prepare(`
-    INSERT INTO addrespon_items (id, trigger_key, trigger_display, type, text, media_file, mimetype, created_at, created_by)
-    VALUES (@id, @triggerKey, @triggerDisplay, @type, @text, @mediaFile, @mimetype, @createdAt, @createdBy)
-`)
-const stmtDeleteByTrigger = db.prepare(`DELETE FROM addrespon_items WHERE trigger_key = ?`)
-const stmtDeleteById = db.prepare(`DELETE FROM addrespon_items WHERE id = ?`)
-const stmtLoadAll = db.prepare(`SELECT * FROM addrespon_items ORDER BY created_at ASC`)
-
-const cache = new Map()
-
-function toItem(row) {
-  return {
-    id: row.id,
-    type: row.type,
-    text: row.text || '',
-    mediaFile: row.media_file || null,
-    mimetype: row.mimetype || null,
-    createdAt: row.created_at,
-    createdBy: row.created_by || null
-  }
-}
-
-function rebuildCache() {
-  cache.clear()
-  for (const row of stmtLoadAll.all()) {
-    if (!cache.has(row.trigger_key)) {
-      cache.set(row.trigger_key, { trigger: row.trigger_display, items: [] })
+function ensureDataDir() {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true })
     }
-    cache.get(row.trigger_key).items.push(toItem(row))
-  }
 }
 
-rebuildCache()
+const DEFAULT_STATE = {
+    triggers: []
+}
 
-export function normalizeTrigger(trigger) {
-  const trimmed = String(trigger || '').trim().toLowerCase().replace(/\s+/g, ' ')
-  return trimmed.replace(/@\+?([0-9][0-9\s-]*[0-9]|[0-9])/g, (m, digits) => `@${digits.replace(/[^0-9]/g, '')}`)
+let cache = null
+
+function loadState() {
+    if (cache) return cache
+
+    ensureDataDir()
+
+    if (!fs.existsSync(STATE_FILE)) {
+        cache = structuredClone(DEFAULT_STATE)
+        persist()
+        return cache
+    }
+
+    try {
+        const raw = fs.readFileSync(STATE_FILE, 'utf8')
+        const parsed = JSON.parse(raw)
+        cache = {
+            ...structuredClone(DEFAULT_STATE),
+            ...parsed,
+            triggers: Array.isArray(parsed.triggers) ? parsed.triggers : []
+        }
+    } catch {
+        cache = structuredClone(DEFAULT_STATE)
+    }
+
+    return cache
+}
+
+function persist() {
+    ensureDataDir()
+    try {
+        fs.writeFileSync(STATE_FILE, JSON.stringify(cache, null, 2))
+    } catch (err) {
+        console.error('[ADDRESPON STORE] Gagal menulis addresponState.json:', err?.message || err)
+    }
+}
+
+function normalizeTriggerKey(trigger) {
+    return String(trigger || '').trim().toLowerCase()
+}
+
+function findTriggerEntry(state, trigger) {
+    const key = normalizeTriggerKey(trigger)
+    return state.triggers.find(t => t.triggerKey === key) || null
 }
 
 export function addAddresponItem({ trigger, type, text, mediaBuffer, ext, mimetype, createdBy }) {
-  const key = normalizeTrigger(trigger)
-  if (!key) throw new Error('Trigger tidak boleh kosong.')
+    const state = loadState()
 
-  const id = crypto.randomBytes(6).toString('hex')
-  let mediaFile = null
+    let entry = findTriggerEntry(state, trigger)
+    if (!entry) {
+        entry = {
+            trigger: String(trigger || '').trim(),
+            triggerKey: normalizeTriggerKey(trigger),
+            items: []
+        }
+        state.triggers.push(entry)
+    }
 
-  if (mediaBuffer && mediaBuffer.length) {
-    const safeExt = String(ext || 'bin').replace(/[^a-z0-9]/gi, '') || 'bin'
-    mediaFile = `${id}.${safeExt}`
-    fs.writeFileSync(path.join(MEDIA_DIR, mediaFile), mediaBuffer)
-  }
+    const item = {
+        id: `ar_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        type,
+        text: text || '',
+        media: mediaBuffer ? Buffer.from(mediaBuffer).toString('base64') : null,
+        ext: ext || null,
+        mimetype: mimetype || null,
+        createdBy: createdBy || null,
+        createdAt: Date.now()
+    }
 
-  const row = {
-    id,
-    triggerKey: key,
-    triggerDisplay: key,
-    type,
-    text: text || '',
-    mediaFile,
-    mimetype: mimetype || null,
-    createdAt: Date.now(),
-    createdBy: createdBy || null
-  }
+    entry.items.push(item)
+    persist()
 
-  stmtInsert.run(row)
-  rebuildCache()
-
-  return { trigger: cache.get(key), item: toItem({ ...row, trigger_key: key, media_file: mediaFile, created_at: row.createdAt, created_by: row.createdBy }) }
-}
-
-export function getAddrespon(trigger) {
-  return cache.get(normalizeTrigger(trigger)) || null
-}
-
-export function findMatchingAddrespon(incomingText) {
-  const key = normalizeTrigger(incomingText)
-  if (!key) return null
-  return cache.get(key) || null
+    return { trigger: entry, item }
 }
 
 export function listAddrespon() {
-  return [...cache.values()].sort((a, b) => {
-    const aLatest = Math.max(...a.items.map((i) => i.createdAt))
-    const bLatest = Math.max(...b.items.map((i) => i.createdAt))
-    return bLatest - aLatest
-  })
+    return structuredClone(loadState().triggers)
 }
 
-function unlinkMediaIfExists(mediaFile) {
-  if (!mediaFile) return
-  const mediaPath = path.join(MEDIA_DIR, mediaFile)
-  if (fs.existsSync(mediaPath)) {
-    try { fs.unlinkSync(mediaPath) } catch {  }
-  }
+export function getAddrespon(trigger) {
+    const state = loadState()
+    const entry = findTriggerEntry(state, trigger)
+    return entry ? structuredClone(entry) : null
 }
 
 export function deleteAddrespon(trigger) {
-  const key = normalizeTrigger(trigger)
-  const existing = cache.get(key)
-  if (!existing) return false
-
-  for (const item of existing.items) unlinkMediaIfExists(item.mediaFile)
-
-  stmtDeleteByTrigger.run(key)
-  rebuildCache()
-  return true
+    const state = loadState()
+    const key = normalizeTriggerKey(trigger)
+    const before = state.triggers.length
+    state.triggers = state.triggers.filter(t => t.triggerKey !== key)
+    persist()
+    return state.triggers.length !== before
 }
 
 export function deleteAddresponItem(trigger, index) {
-  const key = normalizeTrigger(trigger)
-  const existing = cache.get(key)
-  if (!existing) return false
+    const state = loadState()
+    const entry = findTriggerEntry(state, trigger)
+    if (!entry) return 'not-found'
 
-  const idx = index - 1
-  if (idx < 0 || idx >= existing.items.length) return false
+    const idx = index - 1
+    if (idx < 0 || idx >= entry.items.length) return 'not-found'
 
-  const removed = existing.items[idx]
-  unlinkMediaIfExists(removed.mediaFile)
-  stmtDeleteById.run(removed.id)
-  rebuildCache()
+    entry.items.splice(idx, 1)
 
-  return cache.has(key) ? 'deleted-item' : 'deleted-trigger'
+    if (entry.items.length === 0) {
+        state.triggers = state.triggers.filter(t => t.triggerKey !== entry.triggerKey)
+        persist()
+        return 'deleted-trigger'
+    }
+
+    persist()
+    return 'deleted-item'
 }
 
-export function getAddresponMediaPath(item) {
-  if (!item?.mediaFile) return null
-  return path.join(MEDIA_DIR, item.mediaFile)
-}
+export function matchAddrespon(messageText) {
+    const key = normalizeTriggerKey(messageText)
+    if (!key) return null
 
-export function getAddresponMediaBuffer(item) {
-  const mediaPath = getAddresponMediaPath(item)
-  if (!mediaPath || !fs.existsSync(mediaPath)) return null
-  return fs.readFileSync(mediaPath)
+    const state = loadState()
+    const entry = findTriggerEntry(state, key)
+    return entry ? structuredClone(entry) : null
 }

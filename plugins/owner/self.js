@@ -11,6 +11,7 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/owner/self.js
+
 import { config, updateSetting } from '../../settings.js'
 
 export default {

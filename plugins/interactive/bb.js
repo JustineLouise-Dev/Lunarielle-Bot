@@ -12,12 +12,9 @@
 // ® Powered By Zapo-js
 // plugins/game/blockblast.js
 
-export default {
-    command: 'blockblast',
-    alias: ['blast', 'blokblast'],
-    category: 'interactive',
-    description: '🟦 Main game Block Blast - susun blok, penuhi baris!',
-    execute: async (m, { sock }) => {
+import { sendRichHtml } from '../../lib/richmessage.js'
+
+export default async function blockblast(m, { conn, args, text, command }) {
         const targetChat = m.chat;
 
         const html = `<style>
@@ -774,41 +771,19 @@ reset();
         const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
         try {
-            await sock.message.send(targetChat, {
-                botForwardedMessage: {
-                    message: {
-                        richResponseMessage: {
-                            submessages: [
-                                {
-                                    messageType: 0,
-                                    messageText: "LUNARIELLE • BLOCK BLAST"
-                                }
-                            ],
-                            messageType: 0,
-                            unifiedResponse: {
-                                data: base64Data
-                            },
-                            contextInfo: {
-                                mentionedJid: [],
-                                groupMentions: [],
-                                statusAttributions: [],
-                                forwardingScore: 1,
-                                isForwarded: true,
-                                forwardedAiBotMessageInfo: {
-                                    botJid: "867051314767696@bot"
-                                },
-                                forwardOrigin: 0
-                            }
-                        }
-                    }
-                }
-            }, {
-                additionalAttributes: { "type": "text" }
-            });
+            await sendRichHtml(conn, targetChat, null, {
+        title: 'LUNARIELLE • BLOCK BLAST',
+        responseData,
+        base64Data
+      });
         } catch (err) {
-            await sock.message.send(targetChat, {
+            await conn.sendMessage(targetChat, {
                 text: `❌ Gagal mengirim Block Blast: ${err?.message || err}`
             });
         }
     }
-};
+
+blockblast.command = 'blockblast'
+blockblast.alias = ['blast', 'blokblast']
+blockblast.category = 'interactive'
+blockblast.description = "🟦 Main game Block Blast - susun blok, penuhi baris!"

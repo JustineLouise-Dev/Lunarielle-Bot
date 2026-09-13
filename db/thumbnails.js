@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Justine Louise & MioDev.
-// Created by Justine Louise & MioDev.
+// Copyright (c) 2026 Justine Louise.
+// Created by Justine Louise.
 //
 // This software is provided for personal and educational use only.
 // Commercial use, resale, or distribution for profit is strictly prohibited
@@ -8,95 +8,69 @@
 // Please respect the developer's work.
 // Do not remove or modify this copyright notice or claim this project as your own.
 //
-// © 2026 Justine Louise & MioDev. All Rights Reserved.
+// © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // db/thumbnails.js
 
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
-import { fileURLToPath } from 'url'
+import { createJsonStore } from './jsonStore.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORE_DIR = path.join(__dirname, '..', 'store')
-const dbPath = path.join(STORE_DIR, 'thumbnail.db')
+const store = createJsonStore('thumbnails.json', 'key')
 
-if (!fs.existsSync(STORE_DIR)) fs.mkdirSync(STORE_DIR, { recursive: true })
-
-const db = new Database(dbPath)
-
-db.pragma('journal_mode = WAL')
-db.pragma('synchronous = NORMAL')
-db.pragma('wal_autocheckpoint = 1000')
-db.pragma('journal_size_limit = 67108864')
-db.pragma('cache_size = -4000')
-db.pragma('mmap_size = 134217728')
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS thumbnails (
-        name TEXT NOT NULL,
-        jenis TEXT NOT NULL CHECK (jenis IN ('thumbnail', 'favicon')),
-        status TEXT NOT NULL DEFAULT 'random' CHECK (status IN ('random', 'private')),
-        metadata TEXT NOT NULL,
-        expired INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        PRIMARY KEY (name, jenis)
-    )
-`)
-
-const stmtUpsert = db.prepare(`
-    INSERT INTO thumbnails (name, jenis, status, metadata, expired, created_at, updated_at)
-    VALUES (@name, @jenis, @status, @metadata, @expired, @now, @now)
-    ON CONFLICT(name, jenis) DO UPDATE SET
-        status = @status,
-        metadata = @metadata,
-        expired = @expired,
-        updated_at = @now
-`)
-const stmtGetByName = db.prepare(`SELECT * FROM thumbnails WHERE name = ? AND jenis = ?`)
-const stmtRandom = db.prepare(`
-    SELECT * FROM thumbnails
-    WHERE jenis = ? AND status = 'random' AND (expired IS NULL OR expired > strftime('%s', 'now'))
-    ORDER BY RANDOM() LIMIT 1
-`)
-const stmtListByJenis = db.prepare(`SELECT * FROM thumbnails WHERE jenis = ? ORDER BY updated_at DESC`)
-const stmtDelete = db.prepare(`DELETE FROM thumbnails WHERE name = ? AND jenis = ?`)
+function makeKey(name, jenis) {
+    return `${String(name).trim()}|${jenis}`
+}
 
 export function saveThumb({ name, jenis, status = 'random', metadata, expired = null }) {
     if (!name || !jenis || !metadata) return null
+
     const safeStatus = jenis === 'favicon' ? 'random' : (status === 'private' ? 'private' : 'random')
-    const info = stmtUpsert.run({
+    const now = Date.now()
+    const key = makeKey(name, jenis)
+    const existing = store.get(key)
+
+    const record = {
+        key,
         name: String(name).trim(),
         jenis,
         status: safeStatus,
         metadata: typeof metadata === 'string' ? metadata : JSON.stringify(metadata),
         expired,
-        now: Math.floor(Date.now() / 1000)
-    })
-    return { name: String(name).trim(), jenis, status: safeStatus, changes: info.changes }
+        createdAt: existing?.createdAt || now,
+        updatedAt: now
+    }
+
+    store.set(key, record)
+
+    return { name: record.name, jenis, status: safeStatus, changes: 1 }
 }
 
 export function getThumb(name, jenis) {
-    const row = stmtGetByName.get(String(name).trim(), jenis)
+    const row = store.get(makeKey(name, jenis))
     if (!row) return null
-    row.metadata = JSON.parse(row.metadata)
-    return row
+    return { ...row, metadata: JSON.parse(row.metadata) }
 }
 
 export function getRandomThumb(jenis) {
-    const row = stmtRandom.get(jenis)
-    if (!row) return null
-    row.metadata = JSON.parse(row.metadata)
-    return row
+    const now = Date.now()
+    const candidates = store.all().filter(row =>
+        row.jenis === jenis &&
+        row.status === 'random' &&
+        (row.expired === null || row.expired === undefined || row.expired > now)
+    )
+
+    if (!candidates.length) return null
+
+    const picked = candidates[Math.floor(Math.random() * candidates.length)]
+    return { ...picked, metadata: JSON.parse(picked.metadata) }
 }
 
 export function listThumbs(jenis) {
-    return stmtListByJenis.all(jenis).map(row => ({ ...row, metadata: undefined }))
+    return store.all()
+        .filter(row => row.jenis === jenis)
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .map(row => ({ ...row, metadata: undefined }))
 }
 
 export function deleteThumb(name, jenis) {
-    return stmtDelete.run(String(name).trim(), jenis).changes > 0
+    return store.delete(makeKey(name, jenis))
 }
-
-export { db as thumbnailsDb }

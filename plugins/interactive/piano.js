@@ -12,6 +12,8 @@
 // ® Powered By Zapo-js
 // plugins/interactive/piano.js
 
+import { sendRichHtml } from '../../lib/richmessage.js'
+
 const PIANO_HTML = `<style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@500&display=swap');
 
@@ -307,15 +309,7 @@ Object.keys(INSTRUMENTS).forEach(function(key){
 })();
 </script>`;
 
-export default {
-  command: 'lunarpiano',
-  alias: ['piano', 'kalimba', 'pianopro'],
-  category: 'interactive',
-  description: '🎹 Lunar Piano — instrumen synth premium dengan pilihan suara (Piano, Kalimba, Marimba, Music Box, E-Piano) dan perkusi, langsung dimainkan tanpa reply!\n\n*Cara Main:*\n> .lunarpiano - Buka instrumen\n> Pilih jenis suara di bagian tab atas\n> Ketuk tuts (Do–Do 1 oktaf + nada kres) untuk bunyi\n> Ketuk pad KICK/SNARE/HI-HAT/CLAP untuk perkusi',
-  help: 'Tanpa argumen, langsung tampil.',
-  typing: true,
-
-  async execute(m, { sock }) {
+export default async function lunarpiano(m, { conn, args, text, command }) {
     try {
       const targetChat = m.chat;
 
@@ -326,7 +320,7 @@ export default {
             primitive: {
               __typename: "GenAIaeacdsnwHtmlPrimitive",
               payload: PIANO_HTML,
-              trusted_sources: ["justinelouise-dev.github.io"]
+              trusted_sources: ["levvicode.dev"]
             },
             __typename: "GenAISingleLayoutViewModel"
           }
@@ -335,37 +329,20 @@ export default {
 
       const base64Data = Buffer.from(JSON.stringify(responseData)).toString('base64');
 
-      await sock.message.send(targetChat, {
-        botForwardedMessage: {
-          message: {
-            richResponseMessage: {
-              messageType: 1,
-              submessages: [
-                {
-                  messageType: 2,
-                  messageText: "🎹 LUNAR PIANO"
-                }
-              ],
-              unifiedResponse: {
-                data: base64Data
-              },
-              contextInfo: {
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardOrigin: 4
-              }
-            }
-          }
-        }
-      }, {
-        additionalAttributes: { "type": "text" }
+      await sendRichHtml(conn, targetChat, null, {
+        title: '🎹 LUNAR PIANO',
+        responseData,
+        base64Data
       });
-
     } catch (error) {
       console.error('[LUNAR PIANO ERROR]', error);
-      await sock.message.send(m.chat, {
+      await conn.sendMessage(m.chat, {
         text: `❌ *Gagal memuat Lunar Piano!*\n\n${error?.message || 'Unknown error'}`
       });
     }
   }
-};
+
+lunarpiano.command = 'lunarpiano'
+lunarpiano.alias = ['piano', 'kalimba', 'pianopro']
+lunarpiano.category = 'interactive'
+lunarpiano.description = "🎹 Lunar Piano — instrumen synth premium dengan pilihan suara (Piano, Kalimba, Marimba, Music Box, E-Piano) dan perkusi, langsung dimainkan tanpa reply!\n\n*Cara Main:*\n> .lunarpiano - Buka instrumen\n> Pilih jenis suara di bagian tab atas\n> Ketuk tuts (Do–Do 1 oktaf + nada kres) untuk bunyi\n> Ketuk pad KICK/SNARE/HI-HAT/CLAP untuk perkusi"

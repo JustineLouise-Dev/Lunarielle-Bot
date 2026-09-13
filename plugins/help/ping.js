@@ -11,6 +11,7 @@
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
 // plugins/bot/ping.js
+
 export default {
     command: 'ping',
     alias: ['test', 'p2', 'mbut'],

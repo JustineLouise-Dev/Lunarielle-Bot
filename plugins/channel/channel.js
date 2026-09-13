@@ -10,46 +10,55 @@
 //
 // © 2026 Justine Louise. All Rights Reserved.
 // ® Powered By Zapo-js
-// plugins/chanel/channel.js
+// plugins/channel/channel.js
 
-import { config } from '../../settings.js'
-import { buildQuoteContext } from '../../lib/utils.js'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-export default {
-  command: 'channel',
-  alias: ['chanel', 'ch'],
-  category: 'channel',
-  description: 'Menampilkan channel WhatsApp resmi bot.',
-  typing: true,
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const config = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'config.json'))
+)
 
-  async execute(m) {
+export default async function channel(m, { conn }) {
     const url = config.channelUrl
 
     if (!url) {
-      return m.reply('Channel resmi belum diatur oleh owner bot.')
+        return m.reply('Channel resmi belum diatur oleh owner bot.')
     }
 
-    await m.reply({
-      interactiveMessage: {
-        header: { title: `📢 Channel Resmi ${config.botName}`, hasMediaAttachment: false },
-        body: {
-          text: 'Ikuti channel resmi kami untuk update fitur, pengumuman, dan info terbaru seputar bot.'
-        },
-        footer: { text: 'Klik tombol di bawah untuk membuka channel' },
-        nativeFlowMessage: {
-          buttons: [
-            {
-              name: 'cta_url',
-              buttonParamsJson: JSON.stringify({
-                display_text: '📢 Buka Channel',
-                url
-              })
+    await conn.sendMessage(m.chat, {
+        interactiveMessage: {
+            header: { title: `📢 Channel Resmi ${config.botName || 'Bot'}`, hasMediaAttachment: false },
+            body: {
+                text: 'Ikuti channel resmi kami untuk update fitur, pengumuman, dan info terbaru seputar bot.'
+            },
+            footer: { text: 'Klik tombol di bawah untuk membuka channel' },
+            nativeFlowMessage: {
+                buttons: [
+                    {
+                        name: 'cta_url',
+                        buttonParamsJson: JSON.stringify({
+                            display_text: '📢 Buka Channel',
+                            url
+                        })
+                    }
+                ],
+                messageVersion: 1
+            },
+            contextInfo: {
+                stanzaId: m.id,
+                participant: m.sender,
+                remoteJid: m.chat,
+                quotedMessage: m.message,
+                mentionedJid: [m.sender]
             }
-          ],
-          messageVersion: 1
-        },
-        contextInfo: buildQuoteContext(m)
-      }
-    })
-  }
+        }
+    }, { quoted: m })
 }
+
+channel.command = 'channel'
+channel.alias = ['chanel', 'ch']
+channel.category = 'channel'
+channel.description = 'Menampilkan channel WhatsApp resmi bot.'
